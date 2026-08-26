@@ -1,0 +1,1 @@
+// WiFi manager implementation

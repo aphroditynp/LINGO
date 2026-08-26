@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"name": "LINGO-ESP32",
+			"path": "."
+		}
+	],
+	"settings": {}
+}
