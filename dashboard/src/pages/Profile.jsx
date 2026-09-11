@@ -3,118 +3,339 @@ import {
     useState
 } from "react";
 
+
 import API from "../api";
 
 
-function Profile() {
 
-    const [profile, setProfile] =
-        useState(null);
+function formatDuration(seconds) {
 
-    const [name, setName] =
-        useState("");
+    const totalSeconds =
+        Number(seconds || 0);
 
-    const [age, setAge] =
-        useState("");
+
+    const hours =
+        Math.floor(
+            totalSeconds / 3600
+        );
+
+
+    const minutes =
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
+
+    if (hours > 0) {
+
+        return `${hours} jam ${minutes} menit`;
+
+    }
+
+
+    return `${minutes} menit`;
+
+}
+
+
+
+function getScoreClass(score) {
+
+    if (score >= 80) {
+
+        return "report-score-good";
+
+    }
+
+
+    if (score >= 60) {
+
+        return "report-score-medium";
+
+    }
+
+
+    return "report-score-low";
+
+}
+
+
+
+function Report() {
+
+
+    const [sessions, setSessions] =
+        useState([]);
+
+
+    const [user, setUser] =
+        useState({
+            name: "Pengguna LINGO",
+            age: 0
+        });
+
 
     const [loading, setLoading] =
         useState(true);
 
-    const [saving, setSaving] =
-        useState(false);
-
-    const [message, setMessage] =
-        useState("");
 
 
-
-    // Ambil profil
     useEffect(() => {
 
-        API.get(
-            "/users/BIMA001"
+
+        Promise.all([
+
+            API.get(
+                "/sessions/BIMA001"
+            ),
+
+            API.get(
+                "/users/BIMA001"
+            )
+
+        ])
+
+
+        .then(
+            ([
+                sessionResponse,
+                userResponse
+            ]) => {
+
+
+                setSessions(
+                    sessionResponse.data
+                );
+
+
+                setUser(
+                    userResponse.data
+                );
+
+
+            }
         )
 
-            .then((response) => {
 
-                setProfile(
-                    response.data
-                );
+        .catch((error) => {
 
-                setName(
-                    response.data.name || ""
-                );
+            console.log(
+                error
+            );
 
-                setAge(
-                    response.data.age || ""
-                );
+        })
 
-            })
 
-            .catch((error) => {
+        .finally(() => {
 
-                console.log(error);
+            setLoading(false);
 
-            })
+        });
 
-            .finally(() => {
-
-                setLoading(false);
-
-            });
 
     }, []);
 
 
 
-    // Simpan profil
-    const handleSave = async (event) => {
-
-        event.preventDefault();
-
-        setSaving(true);
-
-        setMessage("");
 
 
-        try {
+    // =====================================================
+    // STATISTIK
+    // =====================================================
 
-            const response =
-                await API.put(
-                    "/users/BIMA001",
-                    {
-                        name: name,
-                        age: age
-                    }
+
+    const totalSession =
+        sessions.length;
+
+
+
+    const average =
+        totalSession > 0
+
+            ?
+
+            Math.round(
+
+                sessions.reduce(
+                    (total, item) =>
+                        total +
+                        Number(
+                            item.accuracy || 0
+                        ),
+                    0
+                )
+
+                /
+
+                totalSession
+
+            )
+
+            :
+
+            0;
+
+
+
+    const totalDuration =
+        sessions.reduce(
+            (total, item) =>
+                total +
+                Number(
+                    item.duration || 0
+                ),
+            0
+        );
+
+
+
+
+
+    // =====================================================
+    // RATA-RATA PER MODUL
+    // =====================================================
+
+
+    const moduleStats = {};
+
+
+
+    sessions.forEach(
+        (item) => {
+
+
+            const module =
+                item.module ||
+                "Modul LINGO";
+
+
+
+            if (!moduleStats[module]) {
+
+                moduleStats[module] = {
+
+                    total: 0,
+
+                    count: 0
+
+                };
+
+            }
+
+
+
+            moduleStats[module].total +=
+                Number(
+                    item.accuracy || 0
                 );
 
 
-            setProfile(
-                response.data
+
+            moduleStats[module].count++;
+
+        }
+    );
+
+
+
+    const modules =
+        Object.entries(
+            moduleStats
+        )
+
+            .map(
+                ([name, data]) => ({
+
+                    name,
+
+                    average:
+                        Math.round(
+                            data.total /
+                            data.count
+                        )
+
+                })
+            )
+
+            .sort(
+                (a, b) =>
+                    b.average -
+                    a.average
             );
 
 
-            setMessage(
-                "Profil berhasil diperbarui."
-            );
+
+    const bestModule =
+        modules.length > 0
+            ? modules[0]
+            : null;
 
 
-        } catch (error) {
 
-            console.log(error);
+    const weakestModule =
+        modules.length > 0
+            ? modules[modules.length - 1]
+            : null;
 
-            setMessage(
-                "Profil gagal diperbarui."
-            );
 
-        } finally {
 
-            setSaving(false);
+
+
+    // =====================================================
+    // REKOMENDASI
+    // =====================================================
+
+
+    let recommendation =
+        "Belum ada cukup data untuk memberikan rekomendasi.";
+
+
+
+    if (weakestModule) {
+
+
+        if (
+            weakestModule.average >= 80
+        ) {
+
+
+            recommendation =
+                `Perkembangan ${user.name} terlihat baik. Pertahankan latihan secara rutin agar kemampuan tetap konsisten.`;
+
+        } else {
+
+
+            recommendation =
+                `Latihan dapat lebih difokuskan pada modul ${weakestModule.name} yang saat ini memiliki rata-rata nilai ${weakestModule.average}%.`;
 
         }
 
-    };
+    }
 
+
+
+
+
+    // =====================================================
+    // SESSION TERAKHIR
+    // =====================================================
+
+
+    const latestSession =
+        [...sessions]
+            .sort(
+                (a, b) =>
+                    new Date(b.date) -
+                    new Date(a.date)
+            )[0];
+
+
+
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
 
 
     if (loading) {
@@ -123,9 +344,11 @@ function Profile() {
 
             <div className="container">
 
-                <div className="profile-loading">
+                <div className="report-empty">
 
-                    Memuat profil...
+                    <h2>
+                        Memuat laporan...
+                    </h2>
 
                 </div>
 
@@ -137,71 +360,156 @@ function Profile() {
 
 
 
+
+
     return (
 
-        <div className="container profile-page">
+        <div className="container report-page">
 
 
-            <div className="profile-header">
-
-                <span>
-                    PROFIL LINGO
-                </span>
-
-                <h1>
-                    Profil Anak
-                </h1>
-
-                <p>
-                    Kelola informasi anak yang
-                    menggunakan LINGO.
-                </p>
-
-            </div>
+            {/* =================================================
+                HEADER
+            ================================================= */}
 
 
+            <div className="report-header">
 
-            <div className="profile-layout">
+                <div>
 
+                    <span className="report-label">
 
-                {/* PROFILE CARD */}
+                        Laporan Perkembangan
 
-                <div className="profile-info-card">
-
-                    <div className="profile-avatar">
-
-                        {name
-                            ? name
-                                .charAt(0)
-                                .toUpperCase()
-                            : "?"
-                        }
-
-                    </div>
+                    </span>
 
 
-                    <h2>
-                        {name || "Pengguna LINGO"}
-                    </h2>
+                    <h1>
+
+                        {user.name}
+
+                    </h1>
 
 
                     <p>
-                        {age
-                            ? `${age} tahun`
-                            : "Umur belum diatur"
-                        }
+
+                        Ringkasan perkembangan belajar
+                        menggunakan LINGO.
+
                     </p>
 
+                </div>
 
-                    <div className="profile-id">
 
-                        ID Anak
 
-                        <strong>
-                            {profile?.id ||
-                                "BIMA001"
-                            }
-                        </strong>
+                <div className="report-id">
+
+                    BIMA001
+
+                </div>
+
+            </div>
+
+
+
+
+
+            {/* =================================================
+                SUMMARY
+            ================================================= */}
+
+
+            <div className="report-summary">
+
+
+                <div className="report-stat">
+
+                    <span>
+                        Total Sesi
+                    </span>
+
+
+                    <strong>
+                        {totalSession}
+                    </strong>
+
+
+                    <small>
+                        sesi belajar
+                    </small>
+
+                </div>
+
+
+
+                <div className="report-stat">
+
+                    <span>
+                        Rata-rata Nilai
+                    </span>
+
+
+                    <strong>
+                        {average}%
+                    </strong>
+
+
+                    <small>
+                        seluruh sesi
+                    </small>
+
+                </div>
+
+
+
+                <div className="report-stat">
+
+                    <span>
+                        Waktu Belajar
+                    </span>
+
+
+                    <strong>
+
+                        {formatDuration(
+                            totalDuration
+                        )}
+
+                    </strong>
+
+
+                    <small>
+                        total belajar
+                    </small>
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+            {/* =================================================
+                MODULE PERFORMANCE
+            ================================================= */}
+
+
+            <div className="report-card">
+
+                <div className="report-card-header">
+
+                    <div>
+
+                        <h2>
+                            Perkembangan Modul
+                        </h2>
+
+
+                        <p>
+                            Rata-rata nilai untuk setiap
+                            modul LINGO.
+                        </p>
 
                     </div>
 
@@ -209,94 +517,293 @@ function Profile() {
 
 
 
-                {/* EDIT CARD */}
-
-                <div className="profile-form-card">
-
-                    <h2>
-                        Informasi Anak
-                    </h2>
-
-                    <p className="form-description">
-                        Informasi ini digunakan pada
-                        dashboard dan laporan LINGO.
-                    </p>
+                <div className="module-report-list">
 
 
-                    <form
-                        onSubmit={
-                            handleSave
+                    {modules.length === 0 ? (
+
+                        <p>
+                            Belum ada data modul.
+                        </p>
+
+                    ) : (
+
+
+                        modules.map(
+                            (module) => (
+
+                                <div
+                                    className="module-report-item"
+                                    key={module.name}
+                                >
+
+
+                                    <div className="module-report-info">
+
+                                        <strong>
+                                            {module.name}
+                                        </strong>
+
+
+                                        <span>
+                                            {module.average}%
+                                        </span>
+
+                                    </div>
+
+
+
+                                    <div className="module-report-progress">
+
+                                        <div
+                                            className="module-report-bar"
+                                            style={{
+                                                width:
+                                                    `${module.average}%`
+                                            }}
+                                        />
+
+                                    </div>
+
+
+                                </div>
+
+                            )
+                        )
+
+                    )}
+
+
+                </div>
+
+            </div>
+
+
+
+
+
+            {/* =================================================
+                BEST + FOCUS
+            ================================================= */}
+
+
+            <div className="report-two-column">
+
+
+                <div className="report-highlight best">
+
+                    <span>
+                        Modul Terbaik
+                    </span>
+
+
+                    <h3>
+
+                        {bestModule
+                            ? bestModule.name
+                            : "-"
                         }
-                    >
+
+                    </h3>
 
 
-                        <label>
-                            Nama Anak
-                        </label>
+                    <strong>
 
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={
-                                (event) =>
-                                    setName(
-                                        event.target.value
-                                    )
-                            }
-                            placeholder="Masukkan nama anak"
-                        />
+                        {bestModule
+                            ? `${bestModule.average}%`
+                            : "-"
+                        }
+
+                    </strong>
+
+                </div>
 
 
 
-                        <label>
-                            Umur
-                        </label>
+                <div className="report-highlight focus">
 
-                        <input
-                            type="number"
-                            min="1"
-                            max="18"
-                            value={age}
-                            onChange={
-                                (event) =>
-                                    setAge(
-                                        event.target.value
-                                    )
-                            }
-                            placeholder="Masukkan umur"
-                        />
+                    <span>
+                        Fokus Latihan
+                    </span>
 
 
+                    <h3>
 
-                        <button
-                            type="submit"
-                            disabled={saving}
-                        >
+                        {weakestModule
+                            ? weakestModule.name
+                            : "-"
+                        }
 
-                            {saving
-                                ? "Menyimpan..."
-                                : "Simpan Perubahan"
-                            }
-
-                        </button>
+                    </h3>
 
 
-                        {message && (
+                    <strong>
 
-                            <p className="profile-message">
+                        {weakestModule
+                            ? `${weakestModule.average}%`
+                            : "-"
+                        }
 
-                                {message}
-
-                            </p>
-
-                        )}
-
-                    </form>
+                    </strong>
 
                 </div>
 
 
             </div>
+
+
+
+
+
+            {/* =================================================
+                RECOMMENDATION
+            ================================================= */}
+
+
+            <div className="report-recommendation">
+
+
+                <div className="recommendation-icon">
+
+                    ★
+
+                </div>
+
+
+
+                <div>
+
+                    <span>
+                        Rekomendasi LINGO
+                    </span>
+
+
+                    <p>
+
+                        {recommendation}
+
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+            {/* =================================================
+                LATEST SESSION
+            ================================================= */}
+
+
+            {latestSession && (
+
+                <div className="report-card latest-report">
+
+
+                    <h2>
+                        Sesi Terakhir
+                    </h2>
+
+
+
+                    <div className="latest-session-grid">
+
+
+                        <div>
+
+                            <span>
+                                Modul
+                            </span>
+
+
+                            <strong>
+                                {latestSession.module}
+                            </strong>
+
+                        </div>
+
+
+
+                        <div>
+
+                            <span>
+                                Nilai
+                            </span>
+
+
+                            <strong
+                                className={
+                                    getScoreClass(
+                                        latestSession.accuracy
+                                    )
+                                }
+                            >
+
+                                {latestSession.accuracy}%
+
+                            </strong>
+
+                        </div>
+
+
+
+                        <div>
+
+                            <span>
+                                Benar
+                            </span>
+
+
+                            <strong>
+                                {latestSession.correct}
+                            </strong>
+
+                        </div>
+
+
+
+                        <div>
+
+                            <span>
+                                Salah
+                            </span>
+
+
+                            <strong>
+                                {latestSession.wrong}
+                            </strong>
+
+                        </div>
+
+
+
+                        <div>
+
+                            <span>
+                                Durasi
+                            </span>
+
+
+                            <strong>
+
+                                {formatDuration(
+                                    latestSession.duration
+                                )}
+
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+            )}
 
 
         </div>
@@ -306,4 +813,4 @@ function Profile() {
 }
 
 
-export default Profile;
+export default Report;

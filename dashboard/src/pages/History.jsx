@@ -102,6 +102,13 @@ function History() {
         useState([]);
 
 
+    const [user, setUser] =
+        useState({
+            name: "Pengguna LINGO",
+            age: 0
+        });
+
+
     const [loading, setLoading] =
         useState(true);
 
@@ -110,16 +117,28 @@ function History() {
     useEffect(() => {
 
 
-        API.get(
-            "/sessions/BIMA001"
-        )
+        Promise.all([
+
+            API.get(
+                "/sessions/BIMA001"
+            ),
+
+            API.get(
+                "/users/BIMA001"
+            )
+
+        ])
 
 
-            .then((response) => {
+        .then(
+            ([
+                sessionResponse,
+                userResponse
+            ]) => {
 
 
                 const sortedData =
-                    [...response.data].sort(
+                    [...sessionResponse.data].sort(
                         (a, b) => {
 
                             return (
@@ -137,23 +156,29 @@ function History() {
                 );
 
 
-            })
-
-
-            .catch((error) => {
-
-                console.log(
-                    error
+                setUser(
+                    userResponse.data
                 );
 
-            })
+
+            }
+        )
 
 
-            .finally(() => {
+        .catch((error) => {
 
-                setLoading(false);
+            console.log(
+                error
+            );
 
-            });
+        })
+
+
+        .finally(() => {
+
+            setLoading(false);
+
+        });
 
 
     }, []);
@@ -172,12 +197,13 @@ function History() {
                 <div>
 
                     <h1>
-                        Riwayat Belajar
+                        Riwayat Belajar {user.name}
                     </h1>
 
 
                     <p>
-                        Daftar aktivitas penggunaan LINGO
+                        Daftar aktivitas belajar{" "}
+                        {user.name} menggunakan LINGO.
                     </p>
 
                 </div>
@@ -304,6 +330,7 @@ function History() {
                                             </td>
 
 
+
                                             {/* MODUL */}
 
                                             <td>
@@ -314,12 +341,18 @@ function History() {
                                                         (
                                                             item.module ===
                                                             "Tantangan Bicara"
+
                                                                 ? "module-blue"
+
                                                                 :
+
                                                             item.module ===
                                                             "Mencocokan Suku Kata"
+
                                                                 ? "module-green"
+
                                                                 :
+
                                                             "module-orange"
                                                         )
                                                     }
@@ -330,6 +363,7 @@ function History() {
                                                 </span>
 
                                             </td>
+
 
 
                                             {/* BENAR */}
@@ -345,6 +379,7 @@ function History() {
                                             </td>
 
 
+
                                             {/* SALAH */}
 
                                             <td>
@@ -356,6 +391,7 @@ function History() {
                                                 </span>
 
                                             </td>
+
 
 
                                             {/* NILAI */}
@@ -376,6 +412,7 @@ function History() {
                                                 </span>
 
                                             </td>
+
 
 
                                             {/* DURASI */}
