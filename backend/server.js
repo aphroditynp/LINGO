@@ -3,19 +3,23 @@ const cors = require("cors");
 
 const db = require("./firebase");
 
-
 const app = express();
 
+
+// =================================
+// MIDDLEWARE
+// =================================
 
 app.use(cors());
 
 app.use(express.json());
 
 
-
+// =================================
 // TEST SERVER
+// =================================
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
 
     res.send(
         "LINGO Backend Running"
@@ -24,258 +28,335 @@ app.get("/",(req,res)=>{
 });
 
 
-
+// =================================
 // GET DATA SESSION
+// =================================
 
 app.get(
-"/api/sessions/:userid",
+    "/api/sessions/:userid",
 
-async(req,res)=>{
+    async (req, res) => {
 
+        try {
 
-    try{
-
-
-        const userid =
-        req.params.userid;
+            const userid =
+                req.params.userid;
 
 
-
-        const snapshot =
-        await db
-        .collection("sessions")
-        .where(
-            "user_id",
-            "==",
-            userid
-        )
-        .get();
-
+            const snapshot =
+                await db
+                    .collection("sessions")
+                    .where(
+                        "user_id",
+                        "==",
+                        userid
+                    )
+                    .get();
 
 
-        let sessions=[];
+            let sessions = [];
 
 
+            snapshot.forEach((doc) => {
 
-        snapshot.forEach(doc=>{
+                sessions.push({
+
+                    id: doc.id,
+
+                    ...doc.data()
+
+                });
+
+            });
 
 
-            sessions.push({
+            res.json(
+                sessions
+            );
 
-                id:doc.id,
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            res.status(500)
+                .json({
+
+                    error:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+// =================================
+// UPLOAD SESSION DARI ESP32
+// =================================
+
+app.post(
+    "/api/session/upload",
+
+    async (req, res) => {
+
+        try {
+
+            const data =
+                req.body;
+
+
+            console.log(
+                "DATA MASUK:",
+                data
+            );
+
+
+            await db
+                .collection("sessions")
+                .add({
+
+                    user_id:
+                        data.user_id,
+
+                    device_id:
+                        data.device_id,
+
+                    module:
+                        data.module,
+
+                    correct:
+                        Number(
+                            data.correct || 0
+                        ),
+
+                    wrong:
+                        Number(
+                            data.wrong || 0
+                        ),
+
+                    accuracy:
+                        Number(
+                            data.accuracy || 0
+                        ),
+
+                    duration:
+                        Number(
+                            data.duration || 0
+                        ),
+
+                    date:
+                        new Date().toISOString()
+
+                });
+
+
+            res.status(200)
+                .json({
+
+                    status:
+                        "success",
+
+                    message:
+                        "Data session berhasil disimpan"
+
+                });
+
+
+        } catch (error) {
+
+            console.error(
+                "UPLOAD ERROR:",
+                error
+            );
+
+
+            res.status(500)
+                .json({
+
+                    status:
+                        "error",
+
+                    message:
+                        error.message
+
+                });
+
+        }
+
+    }
+);
+
+
+// =================================
+// GET USER PROFILE
+// =================================
+
+app.get(
+    "/api/users/:userId",
+
+    async (req, res) => {
+
+        try {
+
+            const userId =
+                req.params.userId;
+
+
+            const doc =
+                await db
+                    .collection("users")
+                    .doc(userId)
+                    .get();
+
+
+            if (!doc.exists) {
+
+                return res
+                    .status(404)
+                    .json({
+
+                        error:
+                            "User tidak ditemukan"
+
+                    });
+
+            }
+
+
+            res.json({
+
+                id:
+                    doc.id,
 
                 ...doc.data()
 
             });
 
 
-        });
+        } catch (error) {
+
+            console.error(error);
 
 
+            res.status(500)
+                .json({
 
-        res.json(sessions);
+                    error:
+                        error.message
 
+                });
 
-    }
-
-
-    catch(error){
-
-
-        res.status(500)
-        .json({
-
-            error:error.message
-
-        });
-
+        }
 
     }
-
-
-});
-
-// =============================
-// UPLOAD DATA DARI ESP32
-// =============================
-
-
-app.post(
-"/api/session/upload",
-
-async(req,res)=>{
-
-
-try{
-
-
-const data = req.body;
-
-
-
-await db
-.collection("sessions")
-.add({
-
-user_id:data.user_id,
-
-device_id:data.device_id,
-
-module:data.module,
-
-correct:data.correct,
-
-wrong:data.wrong,
-
-accuracy:data.accuracy,
-
-duration:data.duration,
-
-date:
-new Date().toISOString()
-
-});
-
-
-
-res.json({
-
-status:"success",
-
-message:
-"Session uploaded"
-
-});
-
-
-}
-
-
-catch(error){
-
-
-res.status(500)
-.json({
-
-status:"error",
-
-message:
-error.message
-
-});
-
-
-}
-
-
-});
-
-// =================================
-// ESP32 UPLOAD SESSION DATA
-// =================================
-
-
-app.post(
-"/api/session/upload",
-
-async(req,res)=>{
-
-
-try{
-
-
-const data = req.body;
-
-
-
-console.log(
-"DATA MASUK:",
-data
 );
 
 
+// =================================
+// UPDATE USER PROFILE
+// =================================
 
-await db
-.collection("sessions")
-.add({
+app.put(
+    "/api/users/:userId",
 
+    async (req, res) => {
 
-user_id:
-data.user_id,
+        try {
 
-
-device_id:
-data.device_id,
-
-
-module:
-data.module,
+            const userId =
+                req.params.userId;
 
 
-correct:
-data.correct,
+            const {
+                name,
+                age
+            } = req.body;
 
 
-wrong:
-data.wrong,
+            if (!name) {
+
+                return res
+                    .status(400)
+                    .json({
+
+                        error:
+                            "Nama wajib diisi"
+
+                    });
+
+            }
 
 
-accuracy:
-data.accuracy,
+            await db
+                .collection("users")
+                .doc(userId)
+                .update({
+
+                    name:
+                        name.trim(),
+
+                    age:
+                        Number(age)
+
+                });
 
 
-duration:
-data.duration,
+            res.json({
+
+                message:
+                    "Profil berhasil diperbarui",
+
+                id:
+                    userId,
+
+                name:
+                    name.trim(),
+
+                age:
+                    Number(age)
+
+            });
 
 
-date:
-new Date().toISOString()
+        } catch (error) {
+
+            console.error(error);
 
 
+            res.status(500)
+                .json({
 
-});
+                    error:
+                        error.message
 
+                });
 
+        }
 
-res.status(200).json({
-
-status:"success",
-
-message:
-"Data session berhasil disimpan"
-
-});
-
+    }
+);
 
 
-}
+// =================================
+// SERVER
+// =================================
 
-catch(error){
+const PORT =
+    process.env.PORT || 3000;
 
-
-console.error(error);
-
-
-res.status(500).json({
-
-status:"error",
-
-message:error.message
-
-});
-
-
-}
-
-
-});
 
 app.listen(
-3000,
-()=>{
+    PORT,
+    "0.0.0.0",
+    () => {
 
-console.log(
-"Server running on port 3000"
+        console.log(
+            `LINGO Backend running on port ${PORT}`
+        );
+
+    }
 );
-
-});

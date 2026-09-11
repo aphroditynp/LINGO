@@ -1,206 +1,441 @@
 import {
-    useEffect,
-    useState
-}
-from "react";
-
-
-import API from "../api";
+    useMemo
+} from "react";
 
 
 import {
     Bar
-}
-from "react-chartjs-2";
+} from "react-chartjs-2";
 
 
 import {
-
-Chart as ChartJS,
-
-BarElement,
-
-CategoryScale,
-
-LinearScale,
-
-Tooltip,
-
-Legend
-
-}
-
-from "chart.js";
-
+    Chart as ChartJS,
+    BarElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend
+} from "chart.js";
 
 
 ChartJS.register(
-
-BarElement,
-
-CategoryScale,
-
-LinearScale,
-
-Tooltip,
-
-Legend
-
+    BarElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend
 );
 
 
 
-function ModuleChart(){
+function ModuleChart({
+    sessions = []
+}) {
 
 
-const [sessions,setSessions]
-=
-useState([]);
+    // ================================
+    // DATA BERDASARKAN MODUL
+    // ================================
 
+    const moduleData =
+        useMemo(() => {
 
+            const result = {};
 
-useEffect(()=>{
 
+            sessions.forEach(
+                (item) => {
 
-API.get(
-"/sessions/BIMA001"
-)
+                    const module =
+                        item.module ||
+                        "Modul LINGO";
 
 
-.then((response)=>{
+                    if (
+                        !result[module]
+                    ) {
 
+                        result[module] = [];
 
-setSessions(response.data);
+                    }
 
 
-})
+                    result[module].push(
+                        Number(
+                            item.accuracy || 0
+                        )
+                    );
 
+                }
+            );
 
-.catch((error)=>{
 
+            return result;
 
-console.log(error);
+        }, [sessions]);
 
 
-});
 
+    // ================================
+    // URUTAN MODUL DIKUNCI
+    // ================================
 
-},[]);
+    const moduleOrder = [
 
+        "Tantangan Bicara",
 
+        "Mencocokan Suku Kata",
 
+        "Misi Juara"
 
+    ];
 
-// Ambil data berdasarkan modul
 
-const moduleData = {};
 
+    const labels =
+        moduleOrder.filter(
+            (module) =>
+                moduleData[module]
+        );
 
 
-sessions.forEach((item)=>{
 
+    // ================================
+    // HITUNG RATA-RATA
+    // ================================
 
-if(!moduleData[item.module]){
+    const values =
+        labels.map(
+            (module) => {
 
+                const values =
+                    moduleData[module];
 
-moduleData[item.module]=[];
 
+                const total =
+                    values.reduce(
+                        (a, b) =>
+                            a + b,
+                        0
+                    );
 
-}
 
+                return Math.round(
+                    total /
+                    values.length
+                );
 
-moduleData[item.module]
-.push(item.accuracy);
+            }
+        );
 
 
-});
 
+    // ================================
+    // DATA CHART
+    // ================================
 
+    const data = {
 
+        labels:
 
-// Hitung rata-rata setiap modul
+            labels.map(
+                (module) => {
 
+                    if (
+                        module ===
+                        "Tantangan Bicara"
+                    ) {
 
-const labels =
-Object.keys(moduleData);
+                        return [
+                            "Tantangan",
+                            "Bicara"
+                        ];
 
+                    }
 
 
-const values = labels.map(
-(module)=>{
+                    if (
+                        module ===
+                        "Mencocokan Suku Kata"
+                    ) {
 
+                        return [
+                            "Mencocokan",
+                            "Suku Kata"
+                        ];
 
-const total =
-moduleData[module]
-.reduce(
-(a,b)=>a+b,
-0
-);
+                    }
 
 
-return Math.round(
-total/moduleData[module].length
-);
+                    if (
+                        module ===
+                        "Misi Juara"
+                    ) {
 
+                        return [
+                            "Misi",
+                            "Juara"
+                        ];
 
-}
+                    }
 
-);
 
+                    return module;
 
+                }
+            ),
 
 
-const data={
+        datasets: [
 
+            {
 
-labels:labels,
+                label:
+                    "Nilai Misi (%)",
 
 
-datasets:[
+                data:
+                    values,
 
-{
 
-label:
-"Kemampuan (%)",
+                backgroundColor:
 
+                    labels.map(
+                        (module) => {
 
-data:values,
+                            if (
+                                module ===
+                                "Tantangan Bicara"
+                            ) {
 
+                                return "#4F7CFF";
 
-borderWidth:1
+                            }
 
-}
 
-]
+                            if (
+                                module ===
+                                "Mencocokan Suku Kata"
+                            ) {
 
+                                return "#45C486";
 
-};
+                            }
 
 
+                            if (
+                                module ===
+                                "Misi Juara"
+                            ) {
 
+                                return "#FF9F43";
 
+                            }
 
-return(
 
-<div className="chart-card module-chart">
+                            return "#4F7CFF";
 
+                        }
+                    ),
 
-<h2>
-Kemampuan Modul LINGO
-</h2>
 
+                borderColor:
 
-<Bar
+                    labels.map(
+                        (module) => {
 
-data={data}
+                            if (
+                                module ===
+                                "Tantangan Bicara"
+                            ) {
 
-/>
+                                return "#3D6EEA";
 
+                            }
 
-</div>
 
-)
+                            if (
+                                module ===
+                                "Mencocokan Suku Kata"
+                            ) {
 
+                                return "#35AD75";
+
+                            }
+
+
+                            if (
+                                module ===
+                                "Misi Juara"
+                            ) {
+
+                                return "#F28B2C";
+
+                            }
+
+
+                            return "#3D6EEA";
+
+                        }
+                    ),
+
+
+                borderWidth:
+                    1,
+
+
+                borderRadius:
+                    10,
+
+
+                hoverBackgroundColor:
+
+                    labels.map(
+                        (module) => {
+
+                            if (
+                                module ===
+                                "Tantangan Bicara"
+                            ) {
+
+                                return "#3D6EEA";
+
+                            }
+
+
+                            if (
+                                module ===
+                                "Mencocokan Suku Kata"
+                            ) {
+
+                                return "#35AD75";
+
+                            }
+
+
+                            if (
+                                module ===
+                                "Misi Juara"
+                            ) {
+
+                                return "#F28B2C";
+
+                            }
+
+
+                            return "#3D6EEA";
+
+                        }
+                    )
+
+            }
+
+        ]
+
+    };
+
+
+
+    // ================================
+    // OPTIONS
+    // ================================
+
+    const options = {
+
+        responsive:
+            true,
+
+
+        maintainAspectRatio:
+            false,
+
+
+        plugins: {
+
+            // HILANGKAN LEGEND
+            legend: {
+
+                display:
+                    false
+
+            },
+
+
+            tooltip: {
+
+                callbacks: {
+
+                    label:
+                        function(context) {
+
+                            return (
+                                ` Nilai: ${context.raw}%`
+                            );
+
+                        }
+
+                }
+
+            }
+
+        },
+
+
+        scales: {
+
+            y: {
+
+                beginAtZero:
+                    true,
+
+
+                max:
+                    100,
+
+
+                ticks: {
+
+                    callback:
+                        function(value) {
+
+                            return value + "%";
+
+                        }
+
+                }
+
+            }
+
+        }
+
+    };
+
+
+
+    return (
+
+        <div
+            className="chart-card module-chart"
+
+            style={{
+                height:
+                    "350px"
+            }}
+        >
+
+            <h2>
+                Kemampuan Modul LINGO
+            </h2>
+
+
+            <Bar
+                data={data}
+                options={options}
+            />
+
+        </div>
+
+    );
 
 }
 

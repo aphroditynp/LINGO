@@ -12,7 +12,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Report from "./pages/Report";
-
+import Profile from "./pages/Profile";
 
 
 function App(){
@@ -54,6 +54,10 @@ element={
 }
 />
 
+<Route
+    path="/profile"
+    element={<Profile />}
+/>
 
 </Routes>
 
