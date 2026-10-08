@@ -9,8 +9,7 @@
 #include <Wire.h>
 #include <BitBang_I2C.h> // Library Bitbang khusus MCU 32-bit
 #include <DFRobotDFPlayerMini.h>
-// #include <LINGO_Speech_Recognition_inferencing.h>
-#include "LINGO_Speech_Recognition_inferencing.h"
+#include <tes_lingo_inferencing.h>
 #include "driver/i2s.h"
 #include <string.h>
 
@@ -82,8 +81,7 @@ uint16_t lastState3 = 0xFFFF;
 // MIC_WS  -> GPIO13
 // MIC_SCK -> GPIO14
 //
-// Tombol MIC asli nantinya ada di GPIO41.
-// Untuk pengujian sementara, tombol MIC menggunakan SW28.
+// Tombol MIC fisik menggunakan GPIO41.
 // =========================================================
 #define MIC_I2S_PORT I2S_NUM_1
 #define MIC_I2S_BCLK 14
@@ -149,9 +147,9 @@ const int trackKonten[11][48] = {
 //
 // Tombol kalimat:
 //   SW1 -> ini_bima
-//   SW3 -> bima_beli_bola
+//   SW3 -> lula_beli_buku
 //   SW5 -> bima_ada_bola
-//   SW7 -> ada_tiga_bola
+//   SW7 -> tiga_buku_baru
 //
 // Tombol MIC:
 //   GPIO 41 -> tombol MIC fisik
@@ -161,16 +159,16 @@ const int HALAMAN_TANTANGAN_BICARA = 7; // pinTombolGo[7] = 15
 
 const int pinTantanganBicara[4] = {
   11,  // SW1 -> ini_bima
-  9,   // SW3 -> bima_beli_bola
+  9,   // SW3 -> lula_beli_buku
   16,  // SW5 -> bima_ada_bola
-  18   // SW7 -> ada_tiga_bola
+  18   // SW7 -> tiga_buku_baru
 };
 
 const char *labelTantanganBicara[4] = {
   "ini_bima",
-  "bima_beli_bola",
+  "lula_beli_buku",
   "bima_ada_bola",
-  "ada_tiga_bola"
+  "tiga_buku_baru"
 };
 
 #define MIC_BUTTON_PIN 41 // Tombol MIC fisik langsung ke GPIO 41
@@ -312,9 +310,14 @@ bool initMicrophone() {
 
   i2s_zero_dma_buffer(MIC_I2S_PORT);
 
-  audioBuffer = (int16_t *)malloc(
-    EI_CLASSIFIER_RAW_SAMPLE_COUNT * sizeof(int16_t)
-  );
+  const size_t audioBufferBytes =
+    EI_CLASSIFIER_RAW_SAMPLE_COUNT * sizeof(int16_t);
+
+  // Gunakan PSRAM N16R8 untuk buffer audio jika tersedia agar heap internal
+  // tetap tersedia untuk WiFi dan proses inferensi.
+  audioBuffer = psramFound()
+    ? (int16_t *)ps_malloc(audioBufferBytes)
+    : (int16_t *)malloc(audioBufferBytes);
 
   if (audioBuffer == nullptr) {
     Serial.println("Gagal mengalokasikan buffer audio!");
@@ -670,7 +673,7 @@ void handleButtonPress(int pinGlobal) {
             jumlahPercobaanBicara[i],
             MAX_PERCOBAAN_BICARA
           );
-          Serial.println("Tekan SW28 untuk mulai merekam.");
+          Serial.println("Tekan tombol MIC GPIO 41 untuk mulai merekam.");
         }
 
         return;
@@ -1027,6 +1030,34 @@ void startWiFiSystem() {
 }
 
 
+void enterOfflineMode() {
+
+  wifiState =
+    WIFI_OFFLINE;
+
+  lingoReady =
+    true;
+
+  Serial.println();
+  Serial.println(
+    "======================================"
+  );
+  Serial.println(
+    "LINGO OFFLINE MODE"
+  );
+  Serial.println(
+    "Permainan berjalan tanpa koneksi WiFi."
+  );
+  Serial.println(
+    "======================================"
+  );
+
+  myDFPlayer.playMp3Folder(
+    0
+  );
+}
+
+
 void playTrack399() {
 
   if (
@@ -1103,6 +1134,15 @@ void handleWiFiState() {
       wm.process();
 
       playTrack399();
+
+      // GPIO 41 dapat memilih mode offline tanpa harus menyelesaikan
+      // konfigurasi WiFi terlebih dahulu.
+      if (
+        micButtonPressed()
+      ) {
+        enterOfflineMode();
+        break;
+      }
 
       if (
         WiFi.status() ==
@@ -1224,48 +1264,12 @@ void handleWiFiState() {
           "======================================"
         );
 
-        wifiState =
-          WIFI_OFFLINE;
-
-        lingoReady =
-          true;
-
-        myDFPlayer.playMp3Folder(
-          0
-        );
+        enterOfflineMode();
       }
 
       break;
-
-
-    case WIFI_OFFLINE:
-
-      // Pada STEP berikutnya, hasil permainan
-      // akan disimpan ke LittleFS.
-
-      if (
-        WiFi.status() ==
-        WL_CONNECTED
-      ) {
-
-        Serial.println(
-          "WiFi kembali tersedia."
-        );
-
-        wifiState =
-          WIFI_ONLINE;
-
-        lingoReady =
-          true;
-
-        Serial.println(
-          "LINGO READY - ONLINE"
-        );
-
-        // uploadOfflineSessions();
-      }
-
-      break;
+      // Mode offline dipilih secara eksplisit dan dipertahankan sampai
+      // perangkat reboot. Pengiriman sesi belum diaktifkan.
   }
 }
 
