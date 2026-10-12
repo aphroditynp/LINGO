@@ -13,6 +13,10 @@
 #include "driver/i2s.h"
 #include <string.h>
 
+#ifndef LINGO_WIFI_ENABLED
+#define LINGO_WIFI_ENABLED 0
+#endif
+
 //BACA DULUUUUUUUUUUUUUUUUUUUUU
 //HALAMAN BERARTI INDEKS TOMBOL
 //MISALKAN HALAMAN 14 BERARTI TOMBOL 14 (Indeks ke 8)
@@ -178,11 +182,17 @@ int jumlahPercobaanBicara[4] = {0, 0, 0, 0};
 int targetBicaraAktif = -1;
 
 // =========================================================
-// LOGIKA KUIS INTERAKTIF (HALAMAN 7, 12, & 14)
+// LOGIKA KUIS INTERAKTIF
 // =========================================================
 int soalAktif = -1; 
 const int AUDIO_BENAR = 30; 
 const int AUDIO_SALAH = 31; 
+
+// Urutan halaman mengikuti urutan tombol GO.
+const int HALAMAN_MISI_JUARA_1 = 6;
+const int HALAMAN_MISI_JUARA_2 = 9;
+const int HALAMAN_MENCOCOKKAN_SUKU_KATA = 10;
+const unsigned long DURASI_AUDIO_KANAN_MENCOCOKKAN_MS = 1000;
 
 struct KuisInteraktif {
   int pinTombolSoal;      // Pin objek kiri (suku kata pertama)
@@ -192,11 +202,11 @@ struct KuisInteraktif {
   int trackAudioGabungan; // [BARU] Audio kata utuh diputar jika pasangan benar 
 };
 
-// Pemetaan Halaman 7 (Tambahkan angka 0, 0 di belakangnya agar format sesuai)
-const int JUMLAH_SOAL_HAL_7 = 8;
-KuisInteraktif soalHalaman7[JUMLAH_SOAL_HAL_7] = {
-  {11, 32, 17, 0, 0}, //tombol soal, audio soal, jawaban benar
-  {28, 33, 34, 0, 0}, 
+// Misi Juara 1: dua kata/kalimat target dan empat pilihan untuk masing-masing.
+const int JUMLAH_SOAL_MISI_JUARA_1 = 8;
+KuisInteraktif soalMisiJuara1[JUMLAH_SOAL_MISI_JUARA_1] = {
+  {11, 32, 17, 0, 0},
+  {28, 33, 34, 0, 0},
   {99, 0, 18, 0, 0},
   {99, 0, 21, 0, 0},
   {99, 0, 22, 0, 0},
@@ -205,9 +215,9 @@ KuisInteraktif soalHalaman7[JUMLAH_SOAL_HAL_7] = {
   {99, 0, 38, 0, 0}
 };
 
-// Pemetaan Halaman 13
-const int JUMLAH_SOAL_HAL_13 = 8;
-KuisInteraktif soalHalaman13[JUMLAH_SOAL_HAL_13] = {
+// Misi Juara 2: dua kata/kalimat target dan empat pilihan untuk masing-masing.
+const int JUMLAH_SOAL_MISI_JUARA_2 = 8;
+KuisInteraktif soalMisiJuara2[JUMLAH_SOAL_MISI_JUARA_2] = {
   {11, 56, 21, 0, 0}, 
   {28, 57, 38, 0, 0}, 
   {99, 0, 18, 0, 0},
@@ -218,9 +228,9 @@ KuisInteraktif soalHalaman13[JUMLAH_SOAL_HAL_13] = {
   {99, 0, 34, 0, 0}
 };
 
-// Pemetaan Halaman 12 (Pencocokan Suku Kata)
-const int JUMLAH_SOAL_HAL_12 = 7; 
-KuisInteraktif soalHalaman12[JUMLAH_SOAL_HAL_12] = {
+// Misi Mencocokkan Suku Kata.
+const int JUMLAH_SOAL_MENCOCOKKAN = 7;
+KuisInteraktif soalMencocokkan[JUMLAH_SOAL_MENCOCOKKAN] = {
   // Misal: Kiri(20)="BU"(160), Kanan(25)="KU"(161), Benar="BUKU"(162)
   {10, 35, 38, 42, 49}, 
   
@@ -254,6 +264,7 @@ bool micButtonPressed();
 void markWiFiConfigured();
 void resetWiFiConfiguration();
 void sendSession();
+void enterOfflineMode();
 
 void resetTantanganBicara() {
   for (int i = 0; i < 4; i++) {
@@ -337,16 +348,20 @@ bool initMicrophone() {
   return true;
 }
 
-bool recordAudio() {
+bool recordAudioWhileHeld() {
   if (audioBuffer == nullptr) {
     Serial.println("Buffer microphone belum tersedia.");
     return false;
   }
 
-  Serial.println("MIC AKTIF - silakan bicara...");
+  if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
+    Serial.println("Rekaman dibatalkan: tombol MIC tidak ditahan.");
+    return false;
+  }
+
+  Serial.println("MIC AKTIF - tahan tombol sambil berbicara...");
 
   i2s_zero_dma_buffer(MIC_I2S_PORT);
-  delay(250);
 
   const size_t CHUNK_SAMPLES = 512;
   static int32_t rawBuffer[CHUNK_SAMPLES];
@@ -375,6 +390,11 @@ bool recordAudio() {
       return false;
     }
 
+    if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
+      Serial.println("Rekaman dibatalkan: tombol MIC dilepas terlalu cepat.");
+      return false;
+    }
+
     size_t samplesRead = bytesRead / sizeof(int32_t);
 
     for (size_t i = 0; i < samplesRead; i++) {
@@ -388,6 +408,19 @@ bool recordAudio() {
     }
 
     totalSamples += samplesRead;
+  }
+
+  // Tetap menahan proses sampai tombol dilepas agar durasi aktif microphone
+  // benar-benar mengikuti tombol fisik, bukan timer perekaman.
+  while (digitalRead(MIC_BUTTON_PIN) == HIGH) {
+    size_t bytesRead = 0;
+    i2s_read(
+      MIC_I2S_PORT,
+      (void *)rawBuffer,
+      sizeof(rawBuffer),
+      &bytesRead,
+      portMAX_DELAY
+    );
   }
 
   Serial.println("Rekaman selesai.");
@@ -415,27 +448,17 @@ bool ujiUcapan(const char *labelTarget) {
   Serial.println(labelTarget);
   Serial.println("======================================");
 
-  // Hentikan audio yang mungkin masih berjalan.
+  // Cue MIC tetap diputar setiap kali tombol MIC memulai percobaan.
   myDFPlayer.stop();
-  delay(150);
-
-  // Track 171 = tanda microphone akan mulai.
-  Serial.println("Track 171 -> MIC MULAI");
+  delay(100);
+  Serial.println("Track 171 -> MIC MULAI (percobaan)");
   myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
-
-  // Tunggu cue selesai supaya tidak ikut terekam.
   delay(DURASI_CUE_MIC_MS);
   myDFPlayer.stop();
   delay(100);
 
   // Rekam audio.
-  bool rekamanBerhasil = recordAudio();
-
-  // Track 172 = tanda microphone selesai/mati.
-  Serial.println("Track 172 -> MIC MATI");
-  myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
-  delay(DURASI_CUE_MIC_MS);
-  myDFPlayer.stop();
+  bool rekamanBerhasil = recordAudioWhileHeld();
 
   if (!rekamanBerhasil) {
     Serial.println("ERROR: Rekaman gagal.");
@@ -615,6 +638,14 @@ void handleMicButtonPress() {
         "Percobaan ke-3 gagal."
       );
 
+      // Beri waktu audio "hampir benar" selesai sebelum menandai
+      // microphone tidak aktif lagi.
+      delay(DURASI_CUE_MIC_MS);
+      Serial.println("Track 172 -> MIC MATI");
+      myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
+      delay(DURASI_CUE_MIC_MS);
+      myDFPlayer.stop();
+
       Serial.println(
         "Tekan GO ke-8 (pin 15) untuk reset."
       );
@@ -673,7 +704,11 @@ void handleButtonPress(int pinGlobal) {
             jumlahPercobaanBicara[i],
             MAX_PERCOBAAN_BICARA
           );
-          Serial.println("Tekan tombol MIC GPIO 41 untuk mulai merekam.");
+          Serial.println("Track 171 -> MIC MULAI");
+          myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
+          delay(DURASI_CUE_MIC_MS);
+          myDFPlayer.stop();
+          Serial.println("Tahan tombol MIC GPIO 41 sambil berbicara.");
         }
 
         return;
@@ -685,21 +720,25 @@ void handleButtonPress(int pinGlobal) {
     // handleMicButtonPress().
   }
 
-  // 3. Cek Kuis (Indeks 6 = Hal 7, Indeks 10 = Hal 12, Indeks 9 = Hal 13)
-  if (halamanAktif == 6 || halamanAktif == 10 || halamanAktif == 9) {
+  // 3. Cek input Misi Juara dan Mencocokkan Suku Kata.
+  if (
+    halamanAktif == HALAMAN_MISI_JUARA_1 ||
+    halamanAktif == HALAMAN_MISI_JUARA_2 ||
+    halamanAktif == HALAMAN_MENCOCOKKAN_SUKU_KATA
+  ) {
     
     KuisInteraktif* daftarSoal;
     int jumlahSoal;
 
-    if (halamanAktif == 6) {
-      daftarSoal = soalHalaman7;
-      jumlahSoal = JUMLAH_SOAL_HAL_7;
-    } else if (halamanAktif == 10) { 
-      daftarSoal = soalHalaman12;
-      jumlahSoal = JUMLAH_SOAL_HAL_12;
-    } else { 
-      daftarSoal = soalHalaman13;
-      jumlahSoal = JUMLAH_SOAL_HAL_13;
+    if (halamanAktif == HALAMAN_MISI_JUARA_1) {
+      daftarSoal = soalMisiJuara1;
+      jumlahSoal = JUMLAH_SOAL_MISI_JUARA_1;
+    } else if (halamanAktif == HALAMAN_MISI_JUARA_2) {
+      daftarSoal = soalMisiJuara2;
+      jumlahSoal = JUMLAH_SOAL_MISI_JUARA_2;
+    } else {
+      daftarSoal = soalMencocokkan;
+      jumlahSoal = JUMLAH_SOAL_MENCOCOKKAN;
     }
     
     // Variabel ini yang sebelumnya hilang (wajib ada di sini)
@@ -740,8 +779,11 @@ void handleButtonPress(int pinGlobal) {
         // Evaluasi pasangan
         if (soalAktif != -1) { 
           
-          if (daftarSoal[indeksJawaban].trackAudioJawaban != 0) {
-            delay(1000); 
+          if (
+            halamanAktif == HALAMAN_MENCOCOKKAN_SUKU_KATA &&
+            daftarSoal[indeksJawaban].trackAudioJawaban != 0
+          ) {
+            delay(DURASI_AUDIO_KANAN_MENCOCOKKAN_MS);
           }
 
           if (pinGlobal == daftarSoal[soalAktif].pinTombolJawaban) {
@@ -981,6 +1023,15 @@ void startFirstTimeWiFiSetup() {
 
 void startWiFiSystem() {
 
+#if !LINGO_WIFI_ENABLED
+  Serial.println(
+    "WiFi dinonaktifkan dari konfigurasi build."
+  );
+
+  enterOfflineMode();
+  return;
+#endif
+
   if (
     hasSavedWiFi()
   ) {
@@ -1103,7 +1154,7 @@ void playTrack400() {
 bool micButtonPressed() {
 
   static bool lastButtonState =
-    HIGH;
+    LOW;
 
   bool currentState =
     digitalRead(
@@ -1112,8 +1163,8 @@ bool micButtonPressed() {
 
   bool pressed =
     (
-      lastButtonState == HIGH &&
-      currentState == LOW
+      lastButtonState == LOW &&
+      currentState == HIGH
     );
 
   lastButtonState =
@@ -1124,6 +1175,10 @@ bool micButtonPressed() {
 
 
 void handleWiFiState() {
+
+#if !LINGO_WIFI_ENABLED
+  return;
+#endif
 
   switch (
     wifiState
@@ -1280,6 +1335,14 @@ void handleWiFiState() {
 
 void sendSession() {
 
+#if !LINGO_WIFI_ENABLED
+  Serial.println(
+    "Upload dibatalkan: WiFi dinonaktifkan."
+  );
+
+  return;
+#endif
+
   if (
     WiFi.status() !=
     WL_CONNECTED
@@ -1395,7 +1458,7 @@ void setup() {
 
   pinMode(
     MIC_BUTTON_PIN,
-    INPUT_PULLUP
+    INPUT_PULLDOWN
   );
 
 
@@ -1694,7 +1757,7 @@ void loop() {
     lingoReady &&
     wifiState != WIFI_FAILED &&
     wifiState != WIFI_FIRST_SETUP &&
-    micButtonPressed()
+    digitalRead(MIC_BUTTON_PIN) == HIGH
   ) {
 
     handleMicButtonPress();
