@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import API from "../api";
+import { getCurrentUserId } from "../user";
 
 
 function Profile() {
@@ -32,7 +33,7 @@ function Profile() {
     useEffect(() => {
 
         API.get(
-            "/users/BIMA001"
+            `/users/${getCurrentUserId()}`
         )
 
             .then((response) => {
@@ -81,7 +82,7 @@ function Profile() {
 
             const response =
                 await API.put(
-                    "/users/BIMA001",
+                    `/users/${getCurrentUserId()}`,
                     {
                         name: name,
                         age: age
@@ -199,7 +200,7 @@ function Profile() {
 
                         <strong>
                             {profile?.id ||
-                                "BIMA001"
+                                getCurrentUserId()
                             }
                         </strong>
 

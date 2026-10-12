@@ -20,6 +20,8 @@ from "../components/ModuleChart";
 import API
 from "../api";
 
+import { getCurrentUserId } from "../user";
+
 
 
 function Dashboard() {
@@ -66,11 +68,11 @@ function Dashboard() {
         Promise.all([
 
             API.get(
-                "/sessions/BIMA001"
+                `/sessions/${getCurrentUserId()}`
             ),
 
             API.get(
-                "/users/BIMA001"
+                `/users/${getCurrentUserId()}`
             )
 
         ])

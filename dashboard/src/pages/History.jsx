@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import API from "../api";
+import { getCurrentUserId } from "../user";
 
 
 function formatDate(dateString) {
@@ -120,11 +121,11 @@ function History() {
         Promise.all([
 
             API.get(
-                "/sessions/BIMA001"
+                `/sessions/${getCurrentUserId()}`
             ),
 
             API.get(
-                "/users/BIMA001"
+                `/users/${getCurrentUserId()}`
             )
 
         ])

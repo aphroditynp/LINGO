@@ -5,6 +5,7 @@ import {
 
 
 import API from "../api";
+import { getCurrentUserId } from "../user";
 
 
 
@@ -86,11 +87,11 @@ function Report() {
         Promise.all([
 
             API.get(
-                "/sessions/BIMA001"
+                `/sessions/${getCurrentUserId()}`
             ),
 
             API.get(
-                "/users/BIMA001"
+                `/users/${getCurrentUserId()}`
             )
 
         ])
@@ -403,7 +404,7 @@ function Report() {
 
                 <div className="report-id">
 
-                    BIMA001
+                    {getCurrentUserId()}
 
                 </div>
 

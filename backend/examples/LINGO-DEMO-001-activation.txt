@@ -1,0 +1,4 @@
+Device ID: LINGO-DEMO-001
+Registration URL: https://lingo-dashboard.onrender.com/register-device?code=442246f3c0aa7bcd1bd9574327863c385e6babb16f441929dd93a7f7ef091a21
+QR PNG: /Users/banjaragung/LINGO/backend/examples/LINGO-DEMO-001-activation.png
+EXAMPLE ONLY: this code is not activated in Firestore.

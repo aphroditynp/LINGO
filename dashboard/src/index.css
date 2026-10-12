@@ -1949,6 +1949,37 @@ tr:hover td {
     text-align: center;
 }
 
+.device-register-page {
+    max-width: 720px;
+}
+
+.device-register-header span {
+    color: #4F7CFF;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.device-register-header h1 {
+    margin: 10px 0 0;
+    font-size: clamp(30px, 6vw, 42px);
+}
+
+.device-register-header p {
+    color: #697386;
+    line-height: 1.6;
+}
+
+.device-register-card {
+    margin-top: 28px;
+}
+
+.device-register-error {
+    margin-top: 16px;
+    color: #b42318;
+    line-height: 1.5;
+}
+
 
 /* MOBILE */
 

@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Report from "./pages/Report";
 import Profile from "./pages/Profile";
+import RegisterDevice from "./pages/RegisterDevice";
 
 
 function App(){
@@ -27,6 +28,11 @@ return (
 
 
 <Routes>
+
+<Route
+path="/register-device"
+element={<RegisterDevice />}
+/>
 
 
 <Route
