@@ -14,6 +14,7 @@ import History from "./pages/History";
 import Report from "./pages/Report";
 import Profile from "./pages/Profile";
 import RegisterDevice from "./pages/RegisterDevice";
+import Admin from "./pages/Admin";
 
 
 function App(){
@@ -33,6 +34,8 @@ return (
 path="/register-device"
 element={<RegisterDevice />}
 />
+
+<Route path="/admin" element={<Admin />} />
 
 
 <Route

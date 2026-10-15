@@ -4,7 +4,7 @@ import {
 } from "react";
 
 import API from "../api";
-import { getCurrentUserId } from "../user";
+import { getCurrentUserId, setCurrentUserId } from "../user";
 
 
 function Profile() {
@@ -41,6 +41,10 @@ function Profile() {
                 setProfile(
                     response.data
                 );
+
+                if (response.data?.id) {
+                    setCurrentUserId(response.data.id);
+                }
 
                 setName(
                     response.data.name || ""

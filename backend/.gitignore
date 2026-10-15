@@ -1,4 +1,7 @@
 node_modules/
 firebase-service-account.json
+lingo-iot-firebase-adminsdk-fbsvc-e47ca31d22.json
 .env
+.env.*
+!.env.example
 private/

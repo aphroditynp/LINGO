@@ -4,7 +4,7 @@ import {
 } from "react";
 
 import API from "../api";
-import { getCurrentUserId } from "../user";
+import { getCurrentUserId, setCurrentUserId } from "../user";
 
 
 function formatDate(dateString) {
@@ -160,6 +160,10 @@ function History() {
                 setUser(
                     userResponse.data
                 );
+
+                if (userResponse.data?.id) {
+                    setCurrentUserId(userResponse.data.id);
+                }
 
 
             }

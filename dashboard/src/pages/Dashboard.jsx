@@ -20,7 +20,7 @@ from "../components/ModuleChart";
 import API
 from "../api";
 
-import { getCurrentUserId } from "../user";
+import { getCurrentUserId, setCurrentUserId } from "../user";
 
 
 
@@ -127,6 +127,10 @@ function Dashboard() {
                     setProfile(
                         profileResponse.data
                     );
+
+                    if (profileResponse.data?.id) {
+                        setCurrentUserId(profileResponse.data.id);
+                    }
 
 
 

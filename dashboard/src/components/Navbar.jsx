@@ -105,6 +105,13 @@ function Navbar() {
 
                 </Link>
 
+                <Link
+                    to="/admin"
+                    className={location.pathname === "/admin" ? "nav-active" : ""}
+                >
+                    Administrator
+                </Link>
+
 
             </div>
 
@@ -210,6 +217,14 @@ function Navbar() {
 
                     Profile
 
+                </Link>
+
+                <Link
+                    to="/admin"
+                    onClick={closeMenu}
+                    className={location.pathname === "/admin" ? "mobile-active" : ""}
+                >
+                    Administrator
                 </Link>
 
 

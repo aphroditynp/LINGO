@@ -47,7 +47,7 @@ DFRobotDFPlayerMini myDFPlayer;
 WiFiManager wm;
 
 String serverURL =
-  "http://192.168.1.7:3000/api/session/upload";
+  "https://lingo-backend.onrender.com/api/session/upload";
 
 #define TRACK_WIFI_SETUP 399
 #define TRACK_WIFI_FAILED 400
@@ -188,6 +188,12 @@ int soalAktif = -1;
 const int AUDIO_BENAR = 30; 
 const int AUDIO_SALAH = 31; 
 
+String sessionModule = "";
+int sessionCorrect = 0;
+int sessionWrong = 0;
+unsigned long sessionStartedAt = 0;
+bool missionSessionActive = false;
+
 // Urutan halaman mengikuti urutan tombol GO.
 const int HALAMAN_MISI_JUARA_1 = 6;
 const int HALAMAN_MISI_JUARA_2 = 9;
@@ -265,6 +271,77 @@ void markWiFiConfigured();
 void resetWiFiConfiguration();
 void sendSession();
 void enterOfflineMode();
+
+const char *getMissionName(int pageIndex) {
+  if (
+    pageIndex == HALAMAN_MISI_JUARA_1 ||
+    pageIndex == HALAMAN_MISI_JUARA_2
+  ) {
+    return "Misi Juara";
+  }
+
+  if (pageIndex == HALAMAN_MENCOCOKKAN_SUKU_KATA) {
+    // Gunakan ejaan yang dipakai dashboard untuk mengelompokkan modul.
+    return "Mencocokan Suku Kata";
+  }
+
+  if (pageIndex == HALAMAN_TANTANGAN_BICARA) {
+    return "Tantangan Bicara";
+  }
+
+  return nullptr;
+}
+
+void startMissionSession(int pageIndex) {
+  const char *missionName = getMissionName(pageIndex);
+  missionSessionActive = missionName != nullptr;
+
+  if (!missionSessionActive) {
+    sessionModule = "";
+    return;
+  }
+
+  sessionModule = missionName;
+  sessionCorrect = 0;
+  sessionWrong = 0;
+  sessionStartedAt = millis();
+
+  Serial.printf("Sesi misi dimulai: %s\n", sessionModule.c_str());
+}
+
+void recordMissionAnswer(bool correct) {
+  if (!missionSessionActive) {
+    return;
+  }
+
+  if (correct) {
+    sessionCorrect++;
+  } else {
+    sessionWrong++;
+  }
+}
+
+void finishMissionSession() {
+  if (!missionSessionActive) {
+    return;
+  }
+
+  missionSessionActive = false;
+  const int totalAnswers = sessionCorrect + sessionWrong;
+
+  if (totalAnswers == 0) {
+    Serial.printf("Sesi %s tidak memiliki jawaban untuk dikirim.\n", sessionModule.c_str());
+    return;
+  }
+
+  Serial.printf(
+    "Sesi %s selesai: benar=%d, salah=%d\n",
+    sessionModule.c_str(),
+    sessionCorrect,
+    sessionWrong
+  );
+  sendSession();
+}
 
 void resetTantanganBicara() {
   for (int i = 0; i < 4; i++) {
@@ -591,6 +668,8 @@ void handleMicButtonPress() {
 
   if (benar) {
 
+    recordMissionAnswer(true);
+
     Serial.println(
       "Kalimat BENAR."
     );
@@ -608,6 +687,8 @@ void handleMicButtonPress() {
     );
 
   } else {
+
+    recordMissionAnswer(false);
 
     Serial.println(
       "Kalimat SALAH."
@@ -663,8 +744,10 @@ void handleButtonPress(int pinGlobal) {
   // 1. Cek tombol GO
   for (int i = 0; i < TOTAL_HALAMAN; i++) {
     if (pinGlobal == pinTombolGo[i]) {
+      finishMissionSession();
       halamanAktif = i; 
       soalAktif = -1; 
+      startMissionSession(halamanAktif);
       Serial.printf("Tombol GO %d ditekan. Masuk ke Halaman Indeks %d\n", pinGlobal, halamanAktif);
       myDFPlayer.playMp3Folder(audioTombolGo[i]); 
 
@@ -788,6 +871,7 @@ void handleButtonPress(int pinGlobal) {
 
           if (pinGlobal == daftarSoal[soalAktif].pinTombolJawaban) {
             Serial.println("Pasangan BENAR!");
+            recordMissionAnswer(true);
             if (daftarSoal[soalAktif].trackAudioGabungan != 0) {
               myDFPlayer.playMp3Folder(daftarSoal[soalAktif].trackAudioGabungan);
             } else {
@@ -796,6 +880,7 @@ void handleButtonPress(int pinGlobal) {
             soalAktif = -1; // Reset memori
           } else {
             Serial.println("Pasangan SALAH!");
+            recordMissionAnswer(false);
             myDFPlayer.playMp3Folder(AUDIO_SALAH);
           }
         } else {
@@ -1369,26 +1454,26 @@ void sendSession() {
   StaticJsonDocument<300>
     doc;
 
-  doc["user_id"] =
-    "BIMA001";
-
   doc["device_id"] =
     "LINGO001";
 
   doc["module"] =
-    "Tantangan Bicara";
+    sessionModule;
 
   doc["correct"] =
-    18;
+    sessionCorrect;
 
   doc["wrong"] =
-    2;
+    sessionWrong;
 
+  const int totalAnswers = sessionCorrect + sessionWrong;
   doc["accuracy"] =
-    90;
+    totalAnswers > 0
+      ? (sessionCorrect * 100 + totalAnswers / 2) / totalAnswers
+      : 0;
 
   doc["duration"] =
-    600;
+    (millis() - sessionStartedAt) / 1000;
 
   String json;
 
