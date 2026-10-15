@@ -12,12 +12,15 @@ import API from "../api";
 
 function AdminDashboard() {
 
-
     const navigate =
         useNavigate();
 
 
     const [devices, setDevices] =
+        useState([]);
+
+
+    const [users, setUsers] =
         useState([]);
 
 
@@ -55,7 +58,11 @@ function AdminDashboard() {
     };
 
 
-    const loadDevices =
+    // =====================================================
+    // LOAD DATA ADMIN
+    // =====================================================
+
+    const loadData =
         async () => {
 
             try {
@@ -65,21 +72,46 @@ function AdminDashboard() {
                 setError("");
 
 
-                const response =
-                    await API.get(
+                const [
+                    devicesResponse,
+                    usersResponse
+                ] = await Promise.all([
+
+                    API.get(
                         "/admin/devices",
                         adminConfig
-                    );
+                    ),
+
+                    API.get(
+                        "/admin/users",
+                        adminConfig
+                    )
+
+                ]);
 
 
                 setDevices(
-                    response.data
+                    Array.isArray(
+                        devicesResponse.data
+                    )
+                        ? devicesResponse.data
+                        : []
+                );
+
+
+                setUsers(
+                    Array.isArray(
+                        usersResponse.data
+                    )
+                        ? usersResponse.data
+                        : []
                 );
 
 
             } catch (requestError) {
 
-                console.log(
+                console.error(
+                    "ADMIN LOAD ERROR:",
                     requestError
                 );
 
@@ -94,9 +126,11 @@ function AdminDashboard() {
                         "lingoAdminToken"
                     );
 
+
                     navigate(
                         "/admin/login"
                     );
+
 
                     return;
 
@@ -104,11 +138,14 @@ function AdminDashboard() {
 
 
                 setError(
+
                     requestError
                         .response
                         ?.data
                         ?.error ||
-                    "Gagal mengambil data perangkat."
+
+                    "Gagal mengambil data administrator."
+
                 );
 
 
@@ -120,6 +157,10 @@ function AdminDashboard() {
 
         };
 
+
+    // =====================================================
+    // LOAD AWAL
+    // =====================================================
 
     useEffect(() => {
 
@@ -134,10 +175,14 @@ function AdminDashboard() {
         }
 
 
-        loadDevices();
+        loadData();
 
     }, []);
 
+
+    // =====================================================
+    // RESET LINGO
+    // =====================================================
 
     const handleReset =
         async (deviceId) => {
@@ -145,8 +190,11 @@ function AdminDashboard() {
             const confirmed =
                 window.confirm(
 
-                    `Apakah kamu yakin ingin mereset ${deviceId}? ` +
-                    `Data history belajar tidak akan dihapus.`
+                    `Apakah kamu yakin ingin mereset ${deviceId}?\n\n` +
+
+                    `Data history belajar tidak akan dihapus.\n` +
+
+                    `LINGO akan mendapatkan QR aktivasi baru.`
 
                 );
 
@@ -165,7 +213,9 @@ function AdminDashboard() {
                 );
 
 
-                setNewQR(null);
+                setNewQR(
+                    null
+                );
 
 
                 const response =
@@ -185,22 +235,26 @@ function AdminDashboard() {
                 );
 
 
-                await loadDevices();
+                await loadData();
 
 
             } catch (requestError) {
 
-                console.log(
+                console.error(
+                    "RESET ERROR:",
                     requestError
                 );
 
 
                 alert(
+
                     requestError
                         .response
                         ?.data
                         ?.error ||
-                    "Reset gagal."
+
+                    "Reset LINGO gagal."
+
                 );
 
 
@@ -214,6 +268,10 @@ function AdminDashboard() {
 
         };
 
+
+    // =====================================================
+    // LOGOUT
+    // =====================================================
 
     const handleLogout =
         () => {
@@ -230,13 +288,73 @@ function AdminDashboard() {
         };
 
 
+    // =====================================================
+    // LIHAT DASHBOARD USER
+    // =====================================================
+
+    const handleViewUser =
+        (userId) => {
+
+            if (!userId) {
+
+                return;
+
+            }
+
+
+            window.open(
+
+                `/admin/user/${userId}`,
+
+                "_blank",
+
+                "noopener,noreferrer"
+
+            );
+
+        };
+
+
+    // =====================================================
+    // LIHAT DASHBOARD DARI DEVICE
+    // =====================================================
+
+    const handleViewDeviceUser =
+        (userId) => {
+
+            if (!userId) {
+
+                return;
+
+            }
+
+
+            window.open(
+
+                `/admin/user/${userId}`,
+
+                "_blank",
+
+                "noopener,noreferrer"
+
+            );
+
+        };
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
     if (loading) {
 
         return (
 
             <div className="container">
 
-                <div className="profile-loading">
+                <div
+                    className="profile-loading"
+                >
 
                     Memuat data administrator...
 
@@ -249,9 +367,18 @@ function AdminDashboard() {
     }
 
 
+    // =====================================================
+    // RENDER
+    // =====================================================
+
     return (
 
         <main className="container">
+
+
+            {/* =================================================
+                HEADER
+            ================================================= */}
 
             <div
                 className="profile-header"
@@ -272,19 +399,25 @@ function AdminDashboard() {
 
 
                 <p>
-                    Kelola perangkat LINGO dan
-                    profil anak yang terhubung.
+                    Kelola perangkat LINGO
+                    dan profil anak yang terhubung.
                 </p>
 
             </div>
 
 
+            {/* =================================================
+                LOGOUT
+            ================================================= */}
+
             <div
                 style={{
                     display:
                         "flex",
+
                     justifyContent:
                         "flex-end",
+
                     marginBottom:
                         "20px"
                 }}
@@ -296,11 +429,17 @@ function AdminDashboard() {
                         handleLogout
                     }
                 >
+
                     Logout
+
                 </button>
 
             </div>
 
+
+            {/* =================================================
+                ERROR
+            ================================================= */}
 
             {error && (
 
@@ -308,21 +447,31 @@ function AdminDashboard() {
                     style={{
                         padding:
                             "15px",
+
                         marginBottom:
                             "20px",
+
                         borderRadius:
                             "10px",
+
                         background:
                             "#fff0f0",
+
                         color:
                             "#c0392b"
                     }}
                 >
+
                     {error}
+
                 </div>
 
             )}
 
+
+            {/* =================================================
+                QR BARU SETELAH RESET
+            ================================================= */}
 
             {newQR && (
 
@@ -330,10 +479,13 @@ function AdminDashboard() {
                     style={{
                         padding:
                             "20px",
+
                         marginBottom:
                             "25px",
+
                         borderRadius:
                             "15px",
+
                         background:
                             "#eef5ff"
                     }}
@@ -345,11 +497,17 @@ function AdminDashboard() {
 
 
                     <p>
+
                         LINGO:
+
                         {" "}
+
                         <strong>
-                            {newQR.device_id}
+                            {
+                                newQR.device_id
+                            }
                         </strong>
+
                     </p>
 
 
@@ -367,6 +525,7 @@ function AdminDashboard() {
                         style={{
                             width:
                                 "100%",
+
                             marginBottom:
                                 "10px"
                         }}
@@ -380,8 +539,7 @@ function AdminDashboard() {
                             navigator
                                 .clipboard
                                 .writeText(
-                                    newQR
-                                        .activation_url
+                                    newQR.activation_url
                                 );
 
                             alert(
@@ -390,13 +548,245 @@ function AdminDashboard() {
 
                         }}
                     >
+
                         Salin Link Aktivasi
+
                     </button>
 
                 </div>
 
             )}
 
+
+            {/* =================================================
+                DAFTAR PENGGUNA
+            ================================================= */}
+
+            <div
+                className="table-card"
+                style={{
+                    overflowX:
+                        "auto",
+
+                    marginBottom:
+                        "30px"
+                }}
+            >
+
+                <div
+                    style={{
+                        display:
+                            "flex",
+
+                        justifyContent:
+                            "space-between",
+
+                        alignItems:
+                            "center",
+
+                        gap:
+                            "15px",
+
+                        flexWrap:
+                            "wrap",
+
+                        marginBottom:
+                            "20px"
+                    }}
+                >
+
+                    <div>
+
+                        <h2
+                            style={{
+                                margin:
+                                    0
+                            }}
+                        >
+
+                            Pengguna LINGO
+
+                        </h2>
+
+
+                        <p
+                            style={{
+                                margin:
+                                    "6px 0 0"
+                            }}
+                        >
+
+                            Pilih pengguna untuk
+                            melihat Dashboard,
+                            History, dan Report.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                {users.length === 0 ? (
+
+                    <div
+                        style={{
+                            padding:
+                                "35px",
+
+                            textAlign:
+                                "center"
+                        }}
+                    >
+
+                        <p>
+                            Belum ada pengguna
+                            terdaftar.
+                        </p>
+
+                    </div>
+
+                ) : (
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    USER ID
+                                </th>
+
+                                <th>
+                                    Nama Anak
+                                </th>
+
+                                <th>
+                                    Umur
+                                </th>
+
+                                <th>
+                                    Dibuat
+                                </th>
+
+                                <th>
+                                    Aksi
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {users.map(
+                                (user) => (
+
+                                    <tr
+                                        key={
+                                            user.id
+                                        }
+                                    >
+
+                                        <td>
+
+                                            <strong>
+                                                {
+                                                    user.id
+                                                }
+                                            </strong>
+
+                                        </td>
+
+
+                                        <td>
+
+                                            {
+                                                user.name ||
+                                                "-"
+                                            }
+
+                                        </td>
+
+
+                                        <td>
+
+                                            {
+                                                user.age
+                                                    ? `${user.age} tahun`
+                                                    : "-"
+                                            }
+
+                                        </td>
+
+
+                                        <td>
+
+                                            {
+                                                user.created_at
+
+                                                    ?
+
+                                                    new Date(
+                                                        user.created_at
+                                                    ).toLocaleDateString(
+                                                        "id-ID",
+                                                        {
+                                                            day:
+                                                                "numeric",
+
+                                                            month:
+                                                                "long",
+
+                                                            year:
+                                                                "numeric"
+                                                        }
+                                                    )
+
+                                                    :
+
+                                                    "-"
+                                            }
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleViewUser(
+                                                        user.id
+                                                    )
+                                                }
+                                            >
+
+                                                Lihat Dashboard
+
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                )
+                            )}
+
+                        </tbody>
+
+                    </table>
+
+                )}
+
+            </div>
+
+
+            {/* =================================================
+                DAFTAR PERANGKAT LINGO
+            ================================================= */}
 
             <div
                 className="table-card"
@@ -406,12 +796,47 @@ function AdminDashboard() {
                 }}
             >
 
+                <div
+                    style={{
+                        marginBottom:
+                            "20px"
+                    }}
+                >
+
+                    <h2
+                        style={{
+                            margin:
+                                0
+                        }}
+                    >
+
+                        Perangkat LINGO
+
+                    </h2>
+
+
+                    <p
+                        style={{
+                            margin:
+                                "6px 0 0"
+                        }}
+                    >
+
+                        Kelola pasangan LINGO
+                        dengan profil anak.
+
+                    </p>
+
+                </div>
+
+
                 {devices.length === 0 ? (
 
                     <div
                         style={{
                             padding:
                                 "50px",
+
                             textAlign:
                                 "center"
                         }}
@@ -478,35 +903,44 @@ function AdminDashboard() {
                                     >
 
                                         <td>
+
                                             <strong>
                                                 {
                                                     device.device_id
                                                 }
                                             </strong>
+
                                         </td>
 
 
                                         <td>
+
                                             {
                                                 device.user_id ||
                                                 "-"
                                             }
+
                                         </td>
 
 
                                         <td>
+
                                             {
-                                                device.name
+                                                device.name ||
+                                                "-"
                                             }
+
                                         </td>
 
 
                                         <td>
+
                                             {
                                                 device.age
                                                     ? `${device.age} tahun`
                                                     : "-"
                                             }
+
                                         </td>
 
 
@@ -516,27 +950,57 @@ function AdminDashboard() {
                                                 style={{
                                                     display:
                                                         "inline-block",
+
                                                     padding:
                                                         "6px 12px",
+
                                                     borderRadius:
                                                         "20px",
+
                                                     background:
                                                         "#e8f8ef",
+
                                                     color:
                                                         "#24955a",
+
                                                     fontSize:
                                                         "13px",
+
                                                     fontWeight:
                                                         "600"
                                                 }}
                                             >
+
                                                 Aktif
+
                                             </span>
 
                                         </td>
 
 
                                         <td>
+
+                                            {device.user_id && (
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleViewDeviceUser(
+                                                            device.user_id
+                                                        )
+                                                    }
+                                                    style={{
+                                                        marginRight:
+                                                            "8px"
+                                                    }}
+                                                >
+
+                                                    Lihat Dashboard
+
+                                                </button>
+
+                                            )}
+
 
                                             <button
                                                 type="button"
@@ -551,13 +1015,17 @@ function AdminDashboard() {
                                                 }
                                             >
 
-                                                {resetting ===
-                                                device.device_id
+                                                {
+                                                    resetting ===
+                                                    device.device_id
 
-                                                    ? "Mereset..."
+                                                        ?
 
-                                                    : "Reset LINGO"
+                                                        "Mereset..."
 
+                                                        :
+
+                                                        "Reset LINGO"
                                                 }
 
                                             </button>
