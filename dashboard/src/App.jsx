@@ -1,9 +1,8 @@
 import {
-BrowserRouter,
-Routes,
-Route
-}
-from "react-router-dom";
+    BrowserRouter,
+    Routes,
+    Route
+} from "react-router-dom";
 
 
 import Navbar from "./components/Navbar";
@@ -15,64 +14,90 @@ import Report from "./pages/Report";
 import Profile from "./pages/Profile";
 import RegisterDevice from "./pages/RegisterDevice";
 
-
-function App(){
-
-
-return (
-
-<BrowserRouter>
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 
-<Navbar />
+function App() {
 
 
-<Routes>
+    return (
 
-<Route
-path="/register-device"
-element={<RegisterDevice />}
-/>
+        <BrowserRouter>
 
 
-<Route
-path="/"
-element={
-<Dashboard />
-}
-/>
+            <Navbar />
 
 
-
-<Route
-path="/history"
-element={
-<History />
-}
-/>
+            <Routes>
 
 
-
-<Route
-path="/report"
-element={
-<Report />
-}
-/>
-
-<Route
-    path="/profile"
-    element={<Profile />}
-/>
-
-</Routes>
+                <Route
+                    path="/register-device"
+                    element={
+                        <RegisterDevice />
+                    }
+                />
 
 
-</BrowserRouter>
+                <Route
+                    path="/"
+                    element={
+                        <Dashboard />
+                    }
+                />
 
 
-)
+                <Route
+                    path="/history"
+                    element={
+                        <History />
+                    }
+                />
 
+
+                <Route
+                    path="/report"
+                    element={
+                        <Report />
+                    }
+                />
+
+
+                <Route
+                    path="/profile"
+                    element={
+                        <Profile />
+                    }
+                />
+
+
+                {/* =====================
+                    ADMIN
+                ===================== */}
+
+                <Route
+                    path="/admin/login"
+                    element={
+                        <AdminLogin />
+                    }
+                />
+
+
+                <Route
+                    path="/admin"
+                    element={
+                        <AdminDashboard />
+                    }
+                />
+
+
+            </Routes>
+
+
+        </BrowserRouter>
+
+    );
 
 }
 

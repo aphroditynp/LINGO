@@ -2,6 +2,7 @@ import {
     useState
 } from "react";
 
+
 import {
     Link,
     useLocation
@@ -36,7 +37,9 @@ function Navbar() {
             <Link
                 to="/"
                 className="navbar-logo"
-                onClick={closeMenu}
+                onClick={
+                    closeMenu
+                }
             >
 
                 LINGO
@@ -106,6 +109,22 @@ function Navbar() {
                 </Link>
 
 
+                <Link
+                    to="/admin/login"
+                    className={
+                        location.pathname.startsWith(
+                            "/admin"
+                        )
+                            ? "nav-active"
+                            : ""
+                    }
+                >
+
+                    Administrator
+
+                </Link>
+
+
             </div>
 
 
@@ -131,9 +150,7 @@ function Navbar() {
             >
 
                 <span></span>
-
                 <span></span>
-
                 <span></span>
 
             </button>
@@ -155,7 +172,9 @@ function Navbar() {
 
                 <Link
                     to="/"
-                    onClick={closeMenu}
+                    onClick={
+                        closeMenu
+                    }
                     className={
                         location.pathname === "/"
                             ? "mobile-active"
@@ -170,7 +189,9 @@ function Navbar() {
 
                 <Link
                     to="/history"
-                    onClick={closeMenu}
+                    onClick={
+                        closeMenu
+                    }
                     className={
                         location.pathname === "/history"
                             ? "mobile-active"
@@ -185,7 +206,9 @@ function Navbar() {
 
                 <Link
                     to="/report"
-                    onClick={closeMenu}
+                    onClick={
+                        closeMenu
+                    }
                     className={
                         location.pathname === "/report"
                             ? "mobile-active"
@@ -200,7 +223,9 @@ function Navbar() {
 
                 <Link
                     to="/profile"
-                    onClick={closeMenu}
+                    onClick={
+                        closeMenu
+                    }
                     className={
                         location.pathname === "/profile"
                             ? "mobile-active"
@@ -209,6 +234,25 @@ function Navbar() {
                 >
 
                     Profile
+
+                </Link>
+
+
+                <Link
+                    to="/admin/login"
+                    onClick={
+                        closeMenu
+                    }
+                    className={
+                        location.pathname.startsWith(
+                            "/admin"
+                        )
+                            ? "mobile-active"
+                            : ""
+                    }
+                >
+
+                    Administrator
 
                 </Link>
 
