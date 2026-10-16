@@ -27,11 +27,18 @@ function formatDuration(seconds) {
         );
 
 
-    if (hours > 0) {
 
-        return `${hours} jam ${minutes} menit`;
+    if (
+        hours > 0
+    ) {
+
+        return (
+            `${hours} jam ` +
+            `${minutes} menit`
+        );
 
     }
+
 
 
     return `${minutes} menit`;
@@ -42,18 +49,24 @@ function formatDuration(seconds) {
 
 function getScoreClass(score) {
 
-    if (score >= 80) {
+    if (
+        score >= 80
+    ) {
 
         return "report-score-good";
 
     }
 
 
-    if (score >= 60) {
+
+    if (
+        score >= 60
+    ) {
 
         return "report-score-medium";
 
     }
+
 
 
     return "report-score-low";
@@ -62,8 +75,24 @@ function getScoreClass(score) {
 
 
 
-function Report() {
+function Report({
+    userIdOverride = null
+}) {
 
+
+    // =====================================================
+    // USER ID
+    // =====================================================
+
+    const activeUserId =
+        getCurrentUserId(
+            userIdOverride
+        );
+
+
+    // =====================================================
+    // STATE
+    // =====================================================
 
     const [sessions, setSessions] =
         useState([]);
@@ -71,8 +100,13 @@ function Report() {
 
     const [user, setUser] =
         useState({
-            name: "Pengguna LINGO",
-            age: 0
+
+            name:
+                "Pengguna LINGO",
+
+            age:
+                0
+
         });
 
 
@@ -81,69 +115,105 @@ function Report() {
 
 
 
+    // =====================================================
+    // LOAD DATA
+    // =====================================================
+
     useEffect(() => {
+
+
+        setLoading(true);
 
 
         Promise.all([
 
             API.get(
-                `/sessions/${getCurrentUserId()}`
+                `/sessions/${activeUserId}`
             ),
 
             API.get(
-                `/users/${getCurrentUserId()}`
+                `/users/${activeUserId}`
             )
 
         ])
 
 
-        .then(
-            ([
-                sessionResponse,
-                userResponse
-            ]) => {
+            .then(
+                ([
+                    sessionResponse,
+                    userResponse
+                ]) => {
 
 
-                setSessions(
-                    sessionResponse.data
+                    console.log(
+                        "REPORT USER ID:",
+                        activeUserId
+                    );
+
+
+                    console.log(
+                        "REPORT SESSION:",
+                        sessionResponse.data
+                    );
+
+
+                    console.log(
+                        "REPORT USER:",
+                        userResponse.data
+                    );
+
+
+
+                    setSessions(
+
+                        Array.isArray(
+                            sessionResponse.data
+                        )
+
+                            ?
+
+                            sessionResponse.data
+
+                            :
+
+                            []
+
+                    );
+
+
+
+                    setUser(
+                        userResponse.data
+                    );
+
+                }
+            )
+
+
+            .catch((error) => {
+
+                console.error(
+                    "Gagal mengambil report:",
+                    error
                 );
 
-
-                setUser(
-                    userResponse.data
-                );
+            })
 
 
-            }
-        )
+            .finally(() => {
+
+                setLoading(false);
+
+            });
 
 
-        .catch((error) => {
-
-            console.log(
-                error
-            );
-
-        })
-
-
-        .finally(() => {
-
-            setLoading(false);
-
-        });
-
-
-    }, []);
-
-
+    }, [activeUserId]);
 
 
 
     // =====================================================
     // STATISTIK
     // =====================================================
-
 
     const totalSession =
         sessions.length;
@@ -159,10 +229,12 @@ function Report() {
 
                 sessions.reduce(
                     (total, item) =>
-                        total +
+                        total
+                        +
                         Number(
                             item.accuracy || 0
                         ),
+
                     0
                 )
 
@@ -181,21 +253,20 @@ function Report() {
     const totalDuration =
         sessions.reduce(
             (total, item) =>
-                total +
+                total
+                +
                 Number(
                     item.duration || 0
                 ),
+
             0
         );
-
-
 
 
 
     // =====================================================
     // RATA-RATA PER MODUL
     // =====================================================
-
 
     const moduleStats = {};
 
@@ -211,13 +282,17 @@ function Report() {
 
 
 
-            if (!moduleStats[module]) {
+            if (
+                !moduleStats[module]
+            ) {
 
                 moduleStats[module] = {
 
-                    total: 0,
+                    total:
+                        0,
 
-                    count: 0
+                    count:
+                        0
 
                 };
 
@@ -268,17 +343,29 @@ function Report() {
 
     const bestModule =
         modules.length > 0
-            ? modules[0]
-            : null;
+
+            ?
+
+            modules[0]
+
+            :
+
+            null;
 
 
 
     const weakestModule =
         modules.length > 0
-            ? modules[modules.length - 1]
-            : null;
 
+            ?
 
+            modules[
+                modules.length - 1
+            ]
+
+            :
+
+            null;
 
 
 
@@ -286,13 +373,14 @@ function Report() {
     // REKOMENDASI
     // =====================================================
 
-
     let recommendation =
         "Belum ada cukup data untuk memberikan rekomendasi.";
 
 
 
-    if (weakestModule) {
+    if (
+        weakestModule
+    ) {
 
 
         if (
@@ -315,15 +403,13 @@ function Report() {
 
 
 
-
-
     // =====================================================
     // SESSION TERAKHIR
     // =====================================================
 
-
     const latestSession =
         [...sessions]
+
             .sort(
                 (a, b) =>
                     new Date(b.date) -
@@ -332,20 +418,23 @@ function Report() {
 
 
 
-
-
     // =====================================================
     // LOADING
     // =====================================================
 
-
-    if (loading) {
+    if (
+        loading
+    ) {
 
         return (
 
-            <div className="container">
+            <div
+                className="container"
+            >
 
-                <div className="report-empty">
+                <div
+                    className="report-empty"
+                >
 
                     <h2>
                         Memuat laporan...
@@ -361,23 +450,30 @@ function Report() {
 
 
 
-
+    // =====================================================
+    // RENDER
+    // =====================================================
 
     return (
 
-        <div className="container report-page">
+        <div
+            className="container report-page"
+        >
 
 
             {/* =================================================
                 HEADER
             ================================================= */}
 
-
-            <div className="report-header">
+            <div
+                className="report-header"
+            >
 
                 <div>
 
-                    <span className="report-label">
+                    <span
+                        className="report-label"
+                    >
 
                         Laporan Perkembangan
 
@@ -402,9 +498,11 @@ function Report() {
 
 
 
-                <div className="report-id">
+                <div
+                    className="report-id"
+                >
 
-                    {getCurrentUserId()}
+                    {activeUserId}
 
                 </div>
 
@@ -412,17 +510,18 @@ function Report() {
 
 
 
-
-
             {/* =================================================
                 SUMMARY
             ================================================= */}
 
+            <div
+                className="report-summary"
+            >
 
-            <div className="report-summary">
 
-
-                <div className="report-stat">
+                <div
+                    className="report-stat"
+                >
 
                     <span>
                         Total Sesi
@@ -442,7 +541,9 @@ function Report() {
 
 
 
-                <div className="report-stat">
+                <div
+                    className="report-stat"
+                >
 
                     <span>
                         Rata-rata Nilai
@@ -462,7 +563,9 @@ function Report() {
 
 
 
-                <div className="report-stat">
+                <div
+                    className="report-stat"
+                >
 
                     <span>
                         Waktu Belajar
@@ -471,9 +574,11 @@ function Report() {
 
                     <strong>
 
-                        {formatDuration(
-                            totalDuration
-                        )}
+                        {
+                            formatDuration(
+                                totalDuration
+                            )
+                        }
 
                     </strong>
 
@@ -489,16 +594,17 @@ function Report() {
 
 
 
-
-
             {/* =================================================
                 MODULE PERFORMANCE
             ================================================= */}
 
+            <div
+                className="report-card"
+            >
 
-            <div className="report-card">
-
-                <div className="report-card-header">
+                <div
+                    className="report-card-header"
+                >
 
                     <div>
 
@@ -508,8 +614,10 @@ function Report() {
 
 
                         <p>
+
                             Rata-rata nilai untuk setiap
                             modul LINGO.
+
                         </p>
 
                     </div>
@@ -518,7 +626,9 @@ function Report() {
 
 
 
-                <div className="module-report-list">
+                <div
+                    className="module-report-list"
+                >
 
 
                     {modules.length === 0 ? (
@@ -529,32 +639,45 @@ function Report() {
 
                     ) : (
 
-
                         modules.map(
                             (module) => (
 
                                 <div
                                     className="module-report-item"
-                                    key={module.name}
+                                    key={
+                                        module.name
+                                    }
                                 >
 
 
-                                    <div className="module-report-info">
+                                    <div
+                                        className="module-report-info"
+                                    >
 
                                         <strong>
-                                            {module.name}
+
+                                            {
+                                                module.name
+                                            }
+
                                         </strong>
 
 
                                         <span>
-                                            {module.average}%
+
+                                            {
+                                                module.average
+                                            }%
+
                                         </span>
 
                                     </div>
 
 
 
-                                    <div className="module-report-progress">
+                                    <div
+                                        className="module-report-progress"
+                                    >
 
                                         <div
                                             className="module-report-bar"
@@ -581,17 +704,18 @@ function Report() {
 
 
 
-
-
             {/* =================================================
                 BEST + FOCUS
             ================================================= */}
 
+            <div
+                className="report-two-column"
+            >
 
-            <div className="report-two-column">
 
-
-                <div className="report-highlight best">
+                <div
+                    className="report-highlight best"
+                >
 
                     <span>
                         Modul Terbaik
@@ -600,9 +724,18 @@ function Report() {
 
                     <h3>
 
-                        {bestModule
-                            ? bestModule.name
-                            : "-"
+                        {
+
+                            bestModule
+
+                                ?
+
+                                bestModule.name
+
+                                :
+
+                                "-"
+
                         }
 
                     </h3>
@@ -610,9 +743,18 @@ function Report() {
 
                     <strong>
 
-                        {bestModule
-                            ? `${bestModule.average}%`
-                            : "-"
+                        {
+
+                            bestModule
+
+                                ?
+
+                                `${bestModule.average}%`
+
+                                :
+
+                                "-"
+
                         }
 
                     </strong>
@@ -621,7 +763,9 @@ function Report() {
 
 
 
-                <div className="report-highlight focus">
+                <div
+                    className="report-highlight focus"
+                >
 
                     <span>
                         Fokus Latihan
@@ -630,9 +774,18 @@ function Report() {
 
                     <h3>
 
-                        {weakestModule
-                            ? weakestModule.name
-                            : "-"
+                        {
+
+                            weakestModule
+
+                                ?
+
+                                weakestModule.name
+
+                                :
+
+                                "-"
+
                         }
 
                     </h3>
@@ -640,9 +793,18 @@ function Report() {
 
                     <strong>
 
-                        {weakestModule
-                            ? `${weakestModule.average}%`
-                            : "-"
+                        {
+
+                            weakestModule
+
+                                ?
+
+                                `${weakestModule.average}%`
+
+                                :
+
+                                "-"
+
                         }
 
                     </strong>
@@ -654,17 +816,18 @@ function Report() {
 
 
 
-
-
             {/* =================================================
                 RECOMMENDATION
             ================================================= */}
 
+            <div
+                className="report-recommendation"
+            >
 
-            <div className="report-recommendation">
 
-
-                <div className="recommendation-icon">
+                <div
+                    className="recommendation-icon"
+                >
 
                     ★
 
@@ -692,119 +855,141 @@ function Report() {
 
 
 
-
-
             {/* =================================================
                 LATEST SESSION
             ================================================= */}
 
+            {
 
-            {latestSession && (
+                latestSession && (
 
-                <div className="report-card latest-report">
-
-
-                    <h2>
-                        Sesi Terakhir
-                    </h2>
+                    <div
+                        className="report-card latest-report"
+                    >
 
 
-
-                    <div className="latest-session-grid">
-
-
-                        <div>
-
-                            <span>
-                                Modul
-                            </span>
-
-
-                            <strong>
-                                {latestSession.module}
-                            </strong>
-
-                        </div>
+                        <h2>
+                            Sesi Terakhir
+                        </h2>
 
 
 
-                        <div>
-
-                            <span>
-                                Nilai
-                            </span>
+                        <div
+                            className="latest-session-grid"
+                        >
 
 
-                            <strong
-                                className={
-                                    getScoreClass(
+                            <div>
+
+                                <span>
+                                    Modul
+                                </span>
+
+
+                                <strong>
+
+                                    {
+                                        latestSession.module
+                                    }
+
+                                </strong>
+
+                            </div>
+
+
+
+                            <div>
+
+                                <span>
+                                    Nilai
+                                </span>
+
+
+                                <strong
+                                    className={
+                                        getScoreClass(
+                                            Number(
+                                                latestSession.accuracy
+                                            )
+                                        )
+                                    }
+                                >
+
+                                    {
                                         latestSession.accuracy
-                                    )
-                                }
-                            >
+                                    }%
 
-                                {latestSession.accuracy}%
+                                </strong>
 
-                            </strong>
-
-                        </div>
+                            </div>
 
 
 
-                        <div>
+                            <div>
 
-                            <span>
-                                Benar
-                            </span>
-
-
-                            <strong>
-                                {latestSession.correct}
-                            </strong>
-
-                        </div>
+                                <span>
+                                    Benar
+                                </span>
 
 
+                                <strong>
 
-                        <div>
+                                    {
+                                        latestSession.correct
+                                    }
 
-                            <span>
-                                Salah
-                            </span>
+                                </strong>
 
-
-                            <strong>
-                                {latestSession.wrong}
-                            </strong>
-
-                        </div>
+                            </div>
 
 
 
-                        <div>
+                            <div>
 
-                            <span>
-                                Durasi
-                            </span>
+                                <span>
+                                    Salah
+                                </span>
 
 
-                            <strong>
+                                <strong>
 
-                                {formatDuration(
-                                    latestSession.duration
-                                )}
+                                    {
+                                        latestSession.wrong
+                                    }
 
-                            </strong>
+                                </strong>
+
+                            </div>
+
+
+
+                            <div>
+
+                                <span>
+                                    Durasi
+                                </span>
+
+
+                                <strong>
+
+                                    {
+                                        formatDuration(
+                                            latestSession.duration
+                                        )
+                                    }
+
+                                </strong>
+
+                            </div>
+
 
                         </div>
 
 
                     </div>
 
-
-                </div>
-
-            )}
+                )
+            }
 
 
         </div>

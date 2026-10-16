@@ -16,6 +16,7 @@ import RegisterDevice from "./pages/RegisterDevice";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUserView from "./pages/AdminUserView";
 
 
 function App() {
@@ -32,6 +33,10 @@ function App() {
             <Routes>
 
 
+                {/* =================================================
+                    REGISTER DEVICE
+                ================================================= */}
+
                 <Route
                     path="/register-device"
                     element={
@@ -39,6 +44,10 @@ function App() {
                     }
                 />
 
+
+                {/* =================================================
+                    USER
+                ================================================= */}
 
                 <Route
                     path="/"
@@ -72,9 +81,9 @@ function App() {
                 />
 
 
-                {/* =====================
+                {/* =================================================
                     ADMIN
-                ===================== */}
+                ================================================= */}
 
                 <Route
                     path="/admin/login"
@@ -88,6 +97,18 @@ function App() {
                     path="/admin"
                     element={
                         <AdminDashboard />
+                    }
+                />
+
+
+                {/* =================================================
+                    ADMIN - VIEW USER
+                ================================================= */}
+
+                <Route
+                    path="/admin/user/:userId/*"
+                    element={
+                        <AdminUserView />
                     }
                 />
 

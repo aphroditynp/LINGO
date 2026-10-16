@@ -9,14 +9,21 @@ import { getCurrentUserId } from "../user";
 
 function formatDate(dateString) {
 
-    const date = new Date(dateString);
+    const date =
+        new Date(dateString);
+
 
     return date.toLocaleDateString(
         "id-ID",
         {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
+            day:
+                "numeric",
+
+            month:
+                "long",
+
+            year:
+                "numeric"
         }
     );
 
@@ -25,13 +32,18 @@ function formatDate(dateString) {
 
 function formatTime(dateString) {
 
-    const date = new Date(dateString);
+    const date =
+        new Date(dateString);
+
 
     return date.toLocaleTimeString(
         "id-ID",
         {
-            hour: "2-digit",
-            minute: "2-digit"
+            hour:
+                "2-digit",
+
+            minute:
+                "2-digit"
         }
     );
 
@@ -43,30 +55,42 @@ function formatDuration(seconds) {
     const totalSeconds =
         Number(seconds || 0);
 
+
     const minutes =
         Math.floor(
             totalSeconds / 60
         );
 
+
     const remainingSeconds =
         totalSeconds % 60;
 
 
-    if (minutes === 0) {
+
+    if (
+        minutes === 0
+    ) {
 
         return `${remainingSeconds} detik`;
 
     }
 
 
-    if (remainingSeconds === 0) {
+
+    if (
+        remainingSeconds === 0
+    ) {
 
         return `${minutes} menit`;
 
     }
 
 
-    return `${minutes} menit ${remainingSeconds} detik`;
+
+    return (
+        `${minutes} menit ` +
+        `${remainingSeconds} detik`
+    );
 
 }
 
@@ -77,18 +101,25 @@ function getScoreClass(accuracy) {
         Number(accuracy || 0);
 
 
-    if (score >= 80) {
+
+    if (
+        score >= 80
+    ) {
 
         return "score-good";
 
     }
 
 
-    if (score >= 60) {
+
+    if (
+        score >= 60
+    ) {
 
         return "score-medium";
 
     }
+
 
 
     return "score-low";
@@ -96,8 +127,25 @@ function getScoreClass(accuracy) {
 }
 
 
-function History() {
 
+function History({
+    userIdOverride = null
+}) {
+
+
+    // =====================================================
+    // USER ID
+    // =====================================================
+
+    const activeUserId =
+        getCurrentUserId(
+            userIdOverride
+        );
+
+
+    // =====================================================
+    // STATE
+    // =====================================================
 
     const [sessions, setSessions] =
         useState([]);
@@ -105,8 +153,13 @@ function History() {
 
     const [user, setUser] =
         useState({
-            name: "Pengguna LINGO",
-            age: 0
+
+            name:
+                "Pengguna LINGO",
+
+            age:
+                0
+
         });
 
 
@@ -115,102 +168,174 @@ function History() {
 
 
 
+    // =====================================================
+    // LOAD DATA
+    // =====================================================
+
     useEffect(() => {
+
+
+        setLoading(true);
 
 
         Promise.all([
 
             API.get(
-                `/sessions/${getCurrentUserId()}`
+                `/sessions/${activeUserId}`
             ),
 
             API.get(
-                `/users/${getCurrentUserId()}`
+                `/users/${activeUserId}`
             )
 
         ])
 
 
-        .then(
-            ([
-                sessionResponse,
-                userResponse
-            ]) => {
+            .then(
+                ([
+                    sessionResponse,
+                    userResponse
+                ]) => {
 
 
-                const sortedData =
-                    [...sessionResponse.data].sort(
-                        (a, b) => {
-
-                            return (
-                                new Date(b.date)
-                                -
-                                new Date(a.date)
-                            );
-
-                        }
+                    console.log(
+                        "HISTORY USER ID:",
+                        activeUserId
                     );
 
 
-                setSessions(
-                    sortedData
+                    console.log(
+                        "HISTORY SESSION:",
+                        sessionResponse.data
+                    );
+
+
+                    console.log(
+                        "HISTORY USER:",
+                        userResponse.data
+                    );
+
+
+
+                    const sessionData =
+                        Array.isArray(
+                            sessionResponse.data
+                        )
+
+                            ?
+
+                            sessionResponse.data
+
+                            :
+
+                            [];
+
+
+
+                    const sortedData =
+                        [...sessionData].sort(
+                            (a, b) => {
+
+                                return (
+
+                                    new Date(
+                                        b.date
+                                    )
+
+                                    -
+
+                                    new Date(
+                                        a.date
+                                    )
+
+                                );
+
+                            }
+                        );
+
+
+
+                    setSessions(
+                        sortedData
+                    );
+
+
+
+                    setUser(
+                        userResponse.data
+                    );
+
+                }
+            )
+
+
+            .catch((error) => {
+
+                console.error(
+                    "Gagal mengambil history:",
+                    error
                 );
 
-
-                setUser(
-                    userResponse.data
-                );
+            })
 
 
-            }
-        )
+            .finally(() => {
+
+                setLoading(false);
+
+            });
 
 
-        .catch((error) => {
-
-            console.log(
-                error
-            );
-
-        })
+    }, [activeUserId]);
 
 
-        .finally(() => {
 
-            setLoading(false);
-
-        });
-
-
-    }, []);
-
-
+    // =====================================================
+    // RENDER
+    // =====================================================
 
     return (
 
-        <div className="container history-page">
+        <div
+            className="container history-page"
+        >
 
 
-            {/* HEADER */}
+            {/* =================================================
+                HEADER
+            ================================================= */}
 
-            <div className="history-header">
+            <div
+                className="history-header"
+            >
 
                 <div>
 
                     <h1>
-                        Riwayat Belajar {user.name}
+
+                        Riwayat Belajar{" "}
+
+                        {user.name}
+
                     </h1>
 
 
                     <p>
+
                         Daftar aktivitas belajar{" "}
-                        {user.name} menggunakan LINGO.
+
+                        {user.name}
+
+                        {" "}menggunakan LINGO.
+
                     </p>
 
                 </div>
 
 
-                <div className="history-count">
+                <div
+                    className="history-count"
+                >
 
                     {sessions.length}
 
@@ -224,14 +349,20 @@ function History() {
 
 
 
-            {/* TABLE */}
+            {/* =================================================
+                TABLE
+            ================================================= */}
 
-            <div className="table-card history-table-card">
+            <div
+                className="table-card history-table-card"
+            >
 
 
                 {loading ? (
 
-                    <div className="history-empty">
+                    <div
+                        className="history-empty"
+                    >
 
                         <h3>
                             Memuat data...
@@ -241,22 +372,30 @@ function History() {
 
                 ) : sessions.length === 0 ? (
 
-                    <div className="history-empty">
+                    <div
+                        className="history-empty"
+                    >
 
                         <h3>
                             Belum ada aktivitas
                         </h3>
 
+
                         <p>
-                            Sesi belajar LINGO akan muncul
-                            di halaman ini.
+
+                            Sesi belajar LINGO
+                            akan muncul di
+                            halaman ini.
+
                         </p>
 
                     </div>
 
                 ) : (
 
-                    <div className="history-table-wrapper">
+                    <div
+                        className="history-table-wrapper"
+                    >
 
                         <table>
 
@@ -295,141 +434,178 @@ function History() {
 
                             <tbody>
 
-                                {sessions.map(
-                                    (item, index) => (
+                                {
 
-                                        <tr
-                                            key={
-                                                item.id ||
-                                                index
-                                            }
-                                        >
+                                    sessions.map(
+                                        (
+                                            item,
+                                            index
+                                        ) => (
 
-                                            {/* TANGGAL */}
+                                            <tr
+                                                key={
+                                                    item.id ||
+                                                    index
+                                                }
+                                            >
 
-                                            <td>
+                                                {/* TANGGAL */}
 
-                                                <div className="history-date">
+                                                <td>
 
-                                                    {formatDate(
-                                                        item.date
-                                                    )}
+                                                    <div
+                                                        className="history-date"
+                                                    >
 
-                                                </div>
+                                                        {
+                                                            formatDate(
+                                                                item.date
+                                                            )
+                                                        }
 
-
-                                                <small className="history-time">
-
-                                                    {formatTime(
-                                                        item.date
-                                                    )}
-
-                                                    {" WIB"}
-
-                                                </small>
-
-                                            </td>
+                                                    </div>
 
 
+                                                    <small
+                                                        className="history-time"
+                                                    >
 
-                                            {/* MODUL */}
+                                                        {
+                                                            formatTime(
+                                                                item.date
+                                                            )
+                                                        }
 
-                                            <td>
+                                                        {" WIB"}
 
-                                                <span
-                                                    className={
-                                                        "module-badge " +
-                                                        (
-                                                            item.module ===
-                                                            "Tantangan Bicara"
+                                                    </small>
 
-                                                                ? "module-blue"
-
-                                                                :
-
-                                                            item.module ===
-                                                            "Mencocokan Suku Kata"
-
-                                                                ? "module-green"
-
-                                                                :
-
-                                                            "module-orange"
-                                                        )
-                                                    }
-                                                >
-
-                                                    {item.module}
-
-                                                </span>
-
-                                            </td>
+                                                </td>
 
 
 
-                                            {/* BENAR */}
+                                                {/* MODUL */}
 
-                                            <td>
+                                                <td>
 
-                                                <span className="correct-value">
+                                                    <span
+                                                        className={
+                                                            "module-badge " +
 
-                                                    {item.correct}
+                                                            (
 
-                                                </span>
+                                                                item.module ===
+                                                                "Tantangan Bicara"
 
-                                            </td>
+                                                                    ?
+
+                                                                    "module-blue"
+
+                                                                    :
+
+                                                                item.module ===
+                                                                "Mencocokan Suku Kata"
+
+                                                                    ?
+
+                                                                    "module-green"
+
+                                                                    :
+
+                                                                    "module-orange"
+
+                                                            )
+                                                        }
+                                                    >
+
+                                                        {
+                                                            item.module
+                                                        }
+
+                                                    </span>
+
+                                                </td>
 
 
 
-                                            {/* SALAH */}
+                                                {/* BENAR */}
 
-                                            <td>
+                                                <td>
 
-                                                <span className="wrong-value">
+                                                    <span
+                                                        className="correct-value"
+                                                    >
 
-                                                    {item.wrong}
+                                                        {
+                                                            item.correct
+                                                        }
 
-                                                </span>
+                                                    </span>
 
-                                            </td>
+                                                </td>
 
 
 
-                                            {/* NILAI */}
+                                                {/* SALAH */}
 
-                                            <td>
+                                                <td>
 
-                                                <span
-                                                    className={
-                                                        "score-badge " +
-                                                        getScoreClass(
+                                                    <span
+                                                        className="wrong-value"
+                                                    >
+
+                                                        {
+                                                            item.wrong
+                                                        }
+
+                                                    </span>
+
+                                                </td>
+
+
+
+                                                {/* NILAI */}
+
+                                                <td>
+
+                                                    <span
+                                                        className={
+                                                            "score-badge " +
+
+                                                            getScoreClass(
+                                                                item.accuracy
+                                                            )
+                                                        }
+                                                    >
+
+                                                        {
                                                             item.accuracy
+                                                        }%
+
+                                                    </span>
+
+                                                </td>
+
+
+
+                                                {/* DURASI */}
+
+                                                <td>
+
+                                                    {
+                                                        formatDuration(
+                                                            item.duration
                                                         )
                                                     }
-                                                >
 
-                                                    {item.accuracy}%
+                                                </td>
 
-                                                </span>
+                                            </tr>
 
-                                            </td>
-
-
-
-                                            {/* DURASI */}
-
-                                            <td>
-
-                                                {formatDuration(
-                                                    item.duration
-                                                )}
-
-                                            </td>
-
-                                        </tr>
-
+                                        )
                                     )
-                                )}
+
+                                }
 
                             </tbody>
 

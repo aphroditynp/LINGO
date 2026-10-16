@@ -24,7 +24,19 @@ import { getCurrentUserId } from "../user";
 
 
 
-function Dashboard() {
+function Dashboard({
+    userIdOverride = null
+}) {
+
+
+    // =====================================================
+    // USER ID
+    // =====================================================
+
+    const activeUserId =
+        getCurrentUserId(
+            userIdOverride
+        );
 
 
     // =====================================================
@@ -57,7 +69,7 @@ function Dashboard() {
 
 
     // =====================================================
-    // AMBIL DATA FIREBASE
+    // AMBIL DATA
     // =====================================================
 
     const loadSessions = () => {
@@ -68,11 +80,11 @@ function Dashboard() {
         Promise.all([
 
             API.get(
-                `/sessions/${getCurrentUserId()}`
+                `/sessions/${activeUserId}`
             ),
 
             API.get(
-                `/users/${getCurrentUserId()}`
+                `/users/${activeUserId}`
             )
 
         ])
@@ -86,7 +98,13 @@ function Dashboard() {
 
 
                     console.log(
-                        "DATA FIREBASE:",
+                        "USER ID:",
+                        activeUserId
+                    );
+
+
+                    console.log(
+                        "DATA SESSION:",
                         sessionsResponse.data
                     );
 
@@ -170,12 +188,12 @@ function Dashboard() {
 
         loadSessions();
 
-    }, []);
+    }, [activeUserId]);
 
 
 
     // =====================================================
-    // FILTER DATA BERDASARKAN PERIODE
+    // FILTER DATA
     // =====================================================
 
     const filteredSessions =
@@ -249,7 +267,10 @@ function Dashboard() {
             );
 
 
-        }, [sessions, period]);
+        }, [
+            sessions,
+            period
+        ]);
 
 
 
@@ -1186,7 +1207,9 @@ function Dashboard() {
 
                                                 {
 
-                                                    item.accuracy >= 80
+                                                    Number(
+                                                        item.accuracy || 0
+                                                    ) >= 80
 
                                                         ?
 
