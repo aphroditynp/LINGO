@@ -109,6 +109,10 @@ function Navbar() {
                 </Link>
 
 
+                <Link to="/teacher/login" className={location.pathname.startsWith("/teacher") ? "nav-active" : ""} onClick={closeMenu}>
+                    Guru
+                </Link>
+
                 <Link
                     to="/admin/login"
                     className={
@@ -237,6 +241,10 @@ function Navbar() {
 
                 </Link>
 
+
+                <Link to="/teacher/login" className={location.pathname.startsWith("/teacher") ? "nav-active" : ""} onClick={closeMenu}>
+                    Guru
+                </Link>
 
                 <Link
                     to="/admin/login"

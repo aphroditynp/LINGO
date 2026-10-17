@@ -17,6 +17,9 @@ import RegisterDevice from "./pages/RegisterDevice";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUserView from "./pages/AdminUserView";
+import TeacherLogin from "./pages/TeacherLogin";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherUserView from "./pages/TeacherUserView";
 
 
 function App() {
@@ -80,6 +83,11 @@ function App() {
                     }
                 />
 
+
+                {/* AKSES KHUSUS GURU */}
+                <Route path="/teacher/login" element={<TeacherLogin />} />
+                <Route path="/teacher" element={<TeacherDashboard />} />
+                <Route path="/teacher/user/:userId/*" element={<TeacherUserView />} />
 
                 {/* =================================================
                     ADMIN

@@ -1,3 +1,4 @@
+import TeacherManager from "../components/TeacherManager";
 import {
     useEffect,
     useState
@@ -405,6 +406,8 @@ function AdminDashboard() {
 
             </div>
 
+
+            <TeacherManager />
 
             {/* =================================================
                 LOGOUT
