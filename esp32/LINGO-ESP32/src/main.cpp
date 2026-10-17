@@ -9,7 +9,7 @@
 #include <Wire.h>
 #include <BitBang_I2C.h> // Library Bitbang khusus MCU 32-bit
 #include <DFRobotDFPlayerMini.h>
-#include <tes_lingo_inferencing.h>
+#include <lingo_speech_inferencing.h>
 #include "driver/i2s.h"
 #include <string.h>
 
@@ -96,6 +96,8 @@ uint16_t lastState3 = 0xFFFF;
 static int16_t *audioBuffer = nullptr;
 
 const float CONFIDENCE_THRESHOLD = 0.70f;
+const size_t LINGO_SPEECH_SAMPLE_COUNT = 16000;
+const int LINGO_SPEECH_SAMPLE_RATE = 16000;
 const int AUDIO_MIC_MULAI = 171;
 const int AUDIO_MIC_MATI  = 172;
 const unsigned long DURASI_CUE_MIC_MS = 1200;
@@ -169,10 +171,24 @@ const int pinTantanganBicara[4] = {
 };
 
 const char *labelTantanganBicara[4] = {
-  "ini_bima",
-  "lula_beli_buku",
-  "bima_ada_bola",
-  "tiga_buku_baru"
+  "i-tu",
+  "a-ku",
+  "bi-ma",
+  "lu-la"
+};
+
+const char *modelLabelTantanganBicara[4] = {
+  "itu",
+  "aku",
+  "bima",
+  "lula"
+};
+
+const LingoSpeechModel modelTantanganBicara[4] = {
+  LINGO_MODEL_ITU,
+  LINGO_MODEL_AKU,
+  LINGO_MODEL_BIMA,
+  LINGO_MODEL_LULA
 };
 
 #define MIC_BUTTON_PIN 41 // Tombol MIC fisik langsung ke GPIO 41
@@ -280,7 +296,7 @@ void resetTantanganBicara() {
 bool initMicrophone() {
   i2s_config_t i2s_config = {
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-    .sample_rate = EI_CLASSIFIER_FREQUENCY,
+    .sample_rate = LINGO_SPEECH_SAMPLE_RATE,
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
     .communication_format = I2S_COMM_FORMAT_I2S,
@@ -322,7 +338,7 @@ bool initMicrophone() {
   i2s_zero_dma_buffer(MIC_I2S_PORT);
 
   const size_t audioBufferBytes =
-    EI_CLASSIFIER_RAW_SAMPLE_COUNT * sizeof(int16_t);
+    LINGO_SPEECH_SAMPLE_COUNT * sizeof(int16_t);
 
   // Gunakan PSRAM N16R8 untuk buffer audio jika tersedia agar heap internal
   // tetap tersedia untuk WiFi dan proses inferensi.
@@ -339,10 +355,10 @@ bool initMicrophone() {
   Serial.println("Microphone INMP441 + Edge Impulse siap.");
   Serial.printf(
     "Sample rate: %d Hz | Samples: %d | Durasi: %.2f detik\n",
-    EI_CLASSIFIER_FREQUENCY,
-    EI_CLASSIFIER_RAW_SAMPLE_COUNT,
-    (float)EI_CLASSIFIER_RAW_SAMPLE_COUNT /
-      (float)EI_CLASSIFIER_FREQUENCY
+    LINGO_SPEECH_SAMPLE_RATE,
+    LINGO_SPEECH_SAMPLE_COUNT,
+    (float)LINGO_SPEECH_SAMPLE_COUNT /
+      (float)LINGO_SPEECH_SAMPLE_RATE
   );
 
   return true;
@@ -368,9 +384,9 @@ bool recordAudioWhileHeld() {
 
   size_t totalSamples = 0;
 
-  while (totalSamples < EI_CLASSIFIER_RAW_SAMPLE_COUNT) {
+  while (totalSamples < LINGO_SPEECH_SAMPLE_COUNT) {
     size_t remaining =
-      EI_CLASSIFIER_RAW_SAMPLE_COUNT - totalSamples;
+      LINGO_SPEECH_SAMPLE_COUNT - totalSamples;
 
     size_t requestedSamples =
       (remaining > CHUNK_SAMPLES) ? CHUNK_SAMPLES : remaining;
@@ -427,21 +443,11 @@ bool recordAudioWhileHeld() {
   return true;
 }
 
-static int microphoneAudioGetData(
-  size_t offset,
-  size_t length,
-  float *out_ptr
+bool ujiUcapan(
+  const char *labelTarget,
+  const char *modelLabelTarget,
+  LingoSpeechModel model
 ) {
-  numpy::int16_to_float(
-    &audioBuffer[offset],
-    out_ptr,
-    length
-  );
-
-  return 0;
-}
-
-bool ujiUcapan(const char *labelTarget) {
   Serial.println();
   Serial.println("======================================");
   Serial.print("Target ucapan : ");
@@ -465,48 +471,25 @@ bool ujiUcapan(const char *labelTarget) {
     return false;
   }
 
-  signal_t signal;
-  signal.total_length = EI_CLASSIFIER_RAW_SAMPLE_COUNT;
-  signal.get_data = &microphoneAudioGetData;
-
-  ei_impulse_result_t result = {0};
-
   Serial.println("Memproses suara dengan Edge Impulse...");
 
-  EI_IMPULSE_ERROR res =
-    run_classifier(&signal, &result, false);
+  const char *detectedLabel = nullptr;
+  float confidence = 0.0f;
+  bool inferenceBerhasil = lingoRecognize(
+    model,
+    audioBuffer,
+    LINGO_SPEECH_SAMPLE_COUNT,
+    &detectedLabel,
+    &confidence
+  );
 
-  if (res != EI_IMPULSE_OK) {
-    Serial.printf("Inference gagal. Error: %d\n", (int)res);
+  if (!inferenceBerhasil) {
+    Serial.println("Inference gagal.");
     return false;
   }
 
-  size_t bestIndex = 0;
-
-  Serial.println("Hasil prediksi:");
-
-  for (size_t i = 0; i < EI_CLASSIFIER_LABEL_COUNT; i++) {
-    Serial.print("  ");
-    Serial.print(result.classification[i].label);
-    Serial.print(" = ");
-    Serial.println(result.classification[i].value, 4);
-
-    if (
-      result.classification[i].value >
-      result.classification[bestIndex].value
-    ) {
-      bestIndex = i;
-    }
-  }
-
-  const char *detectedLabel =
-    result.classification[bestIndex].label;
-
-  float confidence =
-    result.classification[bestIndex].value;
-
   Serial.print("Target      : ");
-  Serial.println(labelTarget);
+  Serial.println(modelLabelTarget);
 
   Serial.print("Terdeteksi  : ");
   Serial.println(detectedLabel);
@@ -515,7 +498,7 @@ bool ujiUcapan(const char *labelTarget) {
   Serial.println(confidence, 4);
 
   bool benar =
-    strcmp(detectedLabel, labelTarget) == 0 &&
+    strcmp(detectedLabel, modelLabelTarget) == 0 &&
     confidence >= CONFIDENCE_THRESHOLD;
 
   if (benar) {
@@ -586,7 +569,9 @@ void handleMicButtonPress() {
 
   bool benar =
     ujiUcapan(
-      labelTantanganBicara[i]
+      labelTantanganBicara[i],
+      modelLabelTantanganBicara[i],
+      modelTantanganBicara[i]
     );
 
   if (benar) {
@@ -1835,9 +1820,3 @@ void loop() {
 
   delay(20);
 }
-
-
-#if !defined(EI_CLASSIFIER_SENSOR) || \
-    EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_MICROPHONE
-#error "Model Edge Impulse yang dipasang bukan model microphone."
-#endif
