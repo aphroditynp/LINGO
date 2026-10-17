@@ -1395,6 +1395,9 @@ const PORT =
     3000;
 
 
+// Guru: akun dengan akses read-only hanya pada ID murid yang diizinkan admin.
+require("./teacher-routes").attachTeacherRoutes({ app, db, requireAdmin, JWT_SECRET });
+
 app.listen(
     PORT,
     "0.0.0.0",
