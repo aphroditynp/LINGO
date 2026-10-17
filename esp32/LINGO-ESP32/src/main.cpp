@@ -12,6 +12,8 @@
 #include <lingo_speech_inferencing.h>
 #include "driver/i2s.h"
 #include <string.h>
+#include <math.h>
+#include "esp_heap_caps.h"
 
 #ifndef LINGO_WIFI_ENABLED
 #define LINGO_WIFI_ENABLED 0
@@ -95,12 +97,24 @@ uint16_t lastState3 = 0xFFFF;
 
 static int16_t *audioBuffer = nullptr;
 
-const float CONFIDENCE_THRESHOLD = 0.70f;
-const size_t LINGO_SPEECH_SAMPLE_COUNT = 16000;
+// Memeriksa BANYAK jendela meningkatkan peluang salah-terima.
+// Mulai dengan ambang 0.85, lalu kalibrasi menggunakan kata target,
+// hard-negative dan noise yang direkam dengan mikrofon INMP441.
+const float CONFIDENCE_THRESHOLD = 0.75f;
+const size_t LINGO_SPEECH_SAMPLE_COUNT = 16000; // 1 detik per inferensi
 const int LINGO_SPEECH_SAMPLE_RATE = 16000;
 const int AUDIO_MIC_MULAI = 171;
 const int AUDIO_MIC_MATI  = 172;
 const unsigned long DURASI_CUE_MIC_MS = 1200;
+const size_t MIC_MIN_VALID_SAMPLES = 2400; // 150 ms, hindari klik tombol
+const size_t MIC_MAX_RECORD_SAMPLES = 5 * LINGO_SPEECH_SAMPLE_COUNT; // 5 detik
+const size_t MIC_WINDOW_HOP_SAMPLES = 4000; // 250 ms / overlap 75%
+// Suara mulai (171) diputar saat memilih kata / siap mengulang,
+// SEBELUM tombol ditekan. Suara mati (172) diputar setelah tombol dilepas.
+// Jangan memutar petunjuk audio selagi microphone mengambil sampel.
+static int16_t *recordingBuffer = nullptr; // seluruh audio dalam PSRAM
+static size_t recordedAudioSamples = 0;
+
 
 // =========================================================
 // LOGIKA HALAMAN (SESI 1) & MAPPING AUDIO (STATE MACHINE)
@@ -294,6 +308,15 @@ void resetTantanganBicara() {
 }
 
 bool initMicrophone() {
+  Serial.printf("[MEM] PSRAM detected=%s | free=%u bytes | heap internal=%u bytes\n",
+                psramFound() ? "YES" : "NO",
+                (unsigned)ESP.getFreePsram(),
+                (unsigned)ESP.getFreeHeap());
+  if (!psramFound()) {
+    Serial.println("[MEM] ERROR: ESP32-S3 N16R8 membutuhkan PSRAM OPI aktif untuk model EON.");
+    return false;
+  }
+
   i2s_config_t i2s_config = {
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
     .sample_rate = LINGO_SPEECH_SAMPLE_RATE,
@@ -347,11 +370,26 @@ bool initMicrophone() {
     : (int16_t *)malloc(audioBufferBytes);
 
   if (audioBuffer == nullptr) {
-    Serial.println("Gagal mengalokasikan buffer audio!");
+    Serial.println("Gagal mengalokasikan buffer audio 1 detik!");
     i2s_driver_uninstall(MIC_I2S_PORT);
     return false;
   }
 
+  recordingBuffer = (int16_t *)heap_caps_malloc(
+    MIC_MAX_RECORD_SAMPLES * sizeof(int16_t),
+    MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
+  );
+  if (recordingBuffer == nullptr) {
+    Serial.println("Gagal mengalokasikan buffer rekaman 5 detik di PSRAM!");
+    free(audioBuffer);
+    audioBuffer = nullptr;
+    i2s_driver_uninstall(MIC_I2S_PORT);
+    return false;
+  }
+
+  Serial.printf("[MIC] Buffer rekaman %u byte di PSRAM | free PSRAM=%u\n",
+                (unsigned)(MIC_MAX_RECORD_SAMPLES * sizeof(int16_t)),
+                (unsigned)ESP.getFreePsram());
   Serial.println("Microphone INMP441 + Edge Impulse siap.");
   Serial.printf(
     "Sample rate: %d Hz | Samples: %d | Durasi: %.2f detik\n",
@@ -364,149 +402,250 @@ bool initMicrophone() {
   return true;
 }
 
+// Suara 171 berarti siap merekam. Diputar SEBELUM tombol MIC ditekan
+// untuk mencegah anak bicara saat audio cue terdengar dan terekam.
+void playMicReadyCue() {
+  Serial.println("Track 171 -> MIC MULAI / SIAP");
+  myDFPlayer.stop();
+  delay(60);
+  myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
+  delay(DURASI_CUE_MIC_MS);
+  myDFPlayer.stop();
+  Serial.println("[MIC] SIAP. Tekan GPIO 41, bicara, lalu LEPAS.");
+}
+
+// Suara 172 hanya diputar SESUDAH semua sampel terkumpul.
+void playMicOffCue() {
+  Serial.println("Track 172 -> MIC MATI");
+  myDFPlayer.stop();
+  delay(60);
+  myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
+  delay(DURASI_CUE_MIC_MS);
+  myDFPlayer.stop();
+}
+
 bool recordAudioWhileHeld() {
-  if (audioBuffer == nullptr) {
-    Serial.println("Buffer microphone belum tersedia.");
+  recordedAudioSamples = 0;
+  if (audioBuffer == nullptr || recordingBuffer == nullptr) {
+    Serial.println("[MIC] Buffer audio belum dialokasikan.");
     return false;
   }
-
   if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
-    Serial.println("Rekaman dibatalkan: tombol MIC tidak ditahan.");
+    Serial.println("[MIC] Tombol sudah dilepas sebelum perekaman mulai.");
     return false;
   }
 
-  Serial.println("MIC AKTIF - tahan tombol sambil berbicara...");
-
+  Serial.println("[MIC] Rekam SELURUH ucapan: tekan -> bicara -> lepas (maks. 5 dtk).");
   i2s_zero_dma_buffer(MIC_I2S_PORT);
 
-  const size_t CHUNK_SAMPLES = 512;
+  // Per blok <= 256 sampel agar pelepasan tombol cepat tertangkap.
+  const size_t CHUNK_SAMPLES = 256;
   static int32_t rawBuffer[CHUNK_SAMPLES];
+  uint32_t lastAudioMillis = millis();
+  size_t clippedSamples = 0;
+  bool readError = false;
 
-  size_t totalSamples = 0;
-
-  while (totalSamples < LINGO_SPEECH_SAMPLE_COUNT) {
-    size_t remaining =
-      LINGO_SPEECH_SAMPLE_COUNT - totalSamples;
-
-    size_t requestedSamples =
-      (remaining > CHUNK_SAMPLES) ? CHUNK_SAMPLES : remaining;
-
+  while (digitalRead(MIC_BUTTON_PIN) == HIGH &&
+         recordedAudioSamples < MIC_MAX_RECORD_SAMPLES) {
+    const size_t remain = MIC_MAX_RECORD_SAMPLES - recordedAudioSamples;
+    const size_t request = remain < CHUNK_SAMPLES ? remain : CHUNK_SAMPLES;
     size_t bytesRead = 0;
-
     esp_err_t result = i2s_read(
-      MIC_I2S_PORT,
-      (void *)rawBuffer,
-      requestedSamples * sizeof(int32_t),
-      &bytesRead,
-      portMAX_DELAY
+      MIC_I2S_PORT, rawBuffer, request * sizeof(int32_t),
+      &bytesRead, pdMS_TO_TICKS(40)
     );
-
-    if (result != ESP_OK) {
-      Serial.printf("Gagal membaca microphone. Error: %d\n", (int)result);
-      return false;
+    if (result != ESP_OK && result != ESP_ERR_TIMEOUT) {
+      Serial.printf("[MIC] I2S error=%d\n", (int)result);
+      readError = true;
+      break;
     }
 
-    if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
-      Serial.println("Rekaman dibatalkan: tombol MIC dilepas terlalu cepat.");
-      return false;
+    const size_t got = bytesRead / sizeof(int32_t);
+    if (got > request) {
+      Serial.println("[MIC] I2S returned too many samples. Abort.");
+      readError = true;
+      break;
     }
-
-    size_t samplesRead = bytesRead / sizeof(int32_t);
-
-    for (size_t i = 0; i < samplesRead; i++) {
+    for (size_t i = 0; i < got; ++i) {
       int32_t sample = rawBuffer[i] >> 16;
       sample *= MIC_GAIN;
+      if (sample > 32767) { sample = 32767; ++clippedSamples; }
+      if (sample < -32768) { sample = -32768; ++clippedSamples; }
+      recordingBuffer[recordedAudioSamples++] = (int16_t)sample;
+    }
+    if (got != 0) lastAudioMillis = millis();
+    else if (millis() - lastAudioMillis > 500) {
+      Serial.println("[MIC] Timeout INMP441: sampel tidak masuk.");
+      readError = true;
+      break;
+    }
+  }
 
-      if (sample > 32767) sample = 32767;
-      if (sample < -32768) sample = -32768;
+  // Bila batas 5 detik tercapai, hentikan dan tunggu tombol dilepas
+  // agar tidak memicu percobaan ganda. Semuanya tetap tersimpan.
+  const bool hitLimit = recordedAudioSamples == MIC_MAX_RECORD_SAMPLES;
+  if (hitLimit) Serial.println("[MIC] Maksimum 5 detik tercapai; perekaman berhenti.");
+  while (digitalRead(MIC_BUTTON_PIN) == HIGH) delay(5);
 
-      audioBuffer[totalSamples + i] = (int16_t)sample;
+  if (readError) return false;
+  if (recordedAudioSamples < MIC_MIN_VALID_SAMPLES) {
+    Serial.printf("[MIC] Terlalu singkat: %u sampel (minimum %u).\n",
+                  (unsigned)recordedAudioSamples,
+                  (unsigned)MIC_MIN_VALID_SAMPLES);
+    return false;
+  }
+
+  int32_t peak = 0;
+  uint64_t sumSq = 0;
+  size_t nonzero = 0;
+  for (size_t i = 0; i < recordedAudioSamples; i++) {
+    const int32_t val = (int32_t)recordingBuffer[i];
+    const int32_t ab = val < 0 ? -val : val;
+    if (ab > peak) peak = ab;
+    if (ab > 200) ++nonzero;
+    sumSq += (uint64_t)((int64_t)val * val);
+  }
+  const float rms = sqrtf((float)((double)sumSq / (double)recordedAudioSamples));
+  Serial.printf("[MIC] Tersimpan %u sampel | durasi=%.3f detik | RMS=%.1f Peak=%ld Nonzero=%u Clip=%u\n",
+                (unsigned)recordedAudioSamples,
+                (float)recordedAudioSamples / (float)LINGO_SPEECH_SAMPLE_RATE,
+                rms, (long)peak, (unsigned)nonzero, (unsigned)clippedSamples);
+  if (peak < 300) Serial.println("[MIC] PERINGATAN: suara sangat lemah, periksa INMP441.");
+  if (clippedSamples > recordedAudioSamples / 100)
+    Serial.println("[MIC] PERINGATAN: clipping, turunkan MIC_GAIN.");
+
+#if defined(LINGO_EI_HEAP_DIAGNOSTICS) && LINGO_EI_HEAP_DIAGNOSTICS
+  if (!heap_caps_check_integrity_all(true)) {
+    Serial.println("[HEAP-FAULT] Sesudah recording sebelum EI");
+    Serial.flush();
+    abort();
+  }
+  Serial.println("[HEAP-OK] Audio recorded (before EI)");
+#endif
+  return true;
+}
+
+// Buat satu input persis 1 detik untuk model MFE.
+// Untuk rekaman pendek, pusatkan ucapan dan isi sampel sisanya dengan nol.
+void prepareInferenceWindow(size_t offset) {
+  memset(audioBuffer, 0, LINGO_SPEECH_SAMPLE_COUNT * sizeof(int16_t));
+  if (recordedAudioSamples < LINGO_SPEECH_SAMPLE_COUNT) {
+    const size_t pad = (LINGO_SPEECH_SAMPLE_COUNT - recordedAudioSamples) / 2;
+    memcpy(audioBuffer + pad, recordingBuffer,
+           recordedAudioSamples * sizeof(int16_t));
+  } else {
+    memcpy(audioBuffer, recordingBuffer + offset,
+           LINGO_SPEECH_SAMPLE_COUNT * sizeof(int16_t));
+  }
+}
+
+// Jalankan inferensi di SELURUH rekaman, bukan satu detik terakhir.
+// Jika ada SATU jendela dengan target dan confidence >= batas, langsung BENAR.
+// Periksa hingga jendela terakhir walaupun offset-nya tidak kelipatan 250ms.
+bool recognizeAcrossRecording(
+  LingoSpeechModel model, const char *target,
+  bool *inferenceSucceeded
+) {
+  if (inferenceSucceeded) *inferenceSucceeded = false;
+  if (recordedAudioSamples < MIC_MIN_VALID_SAMPLES) return false;
+
+  const size_t lastStart = (recordedAudioSamples > LINGO_SPEECH_SAMPLE_COUNT)
+    ? recordedAudioSamples - LINGO_SPEECH_SAMPLE_COUNT : 0;
+
+  size_t offset = 0;
+  size_t windowsChecked = 0;
+  float highestTargetConfidence = 0.0f;
+  bool checkedLast = false;
+
+  while (true) {
+    prepareInferenceWindow(offset);
+    const char *predicted = nullptr;
+    float confidence = 0.0f;
+    const bool ok = lingoRecognize(
+      model, audioBuffer, LINGO_SPEECH_SAMPLE_COUNT,
+      &predicted, &confidence
+    );
+    if (!ok || predicted == nullptr) {
+      Serial.println("[EI] Gagal inferensi window; tidak akan menyatakan BENAR.");
+      if (inferenceSucceeded) *inferenceSucceeded = false;
+      return false;
+    }
+    if (inferenceSucceeded) *inferenceSucceeded = true;
+    ++windowsChecked;
+
+    const bool isTarget = strcmp(predicted, target) == 0;
+    if (isTarget && confidence > highestTargetConfidence)
+      highestTargetConfidence = confidence;
+
+    Serial.printf("[EI] Window %u: %.2f-%.2f s | %s = %.4f | target=%s\n",
+                  (unsigned)windowsChecked,
+                  (float)offset / LINGO_SPEECH_SAMPLE_RATE,
+                  (float)(offset + LINGO_SPEECH_SAMPLE_COUNT) / LINGO_SPEECH_SAMPLE_RATE,
+                  predicted, confidence, target);
+
+    if (isTarget && confidence >= CONFIDENCE_THRESHOLD) {
+      Serial.printf("[EI] TARGET TERDETEKSI di window %u! confidence=%.4f >= %.2f\n",
+                    (unsigned)windowsChecked, confidence, CONFIDENCE_THRESHOLD);
+      return true; // Early exit: satu pengenalan valid sudah cukup
     }
 
-    totalSamples += samplesRead;
+    if (offset == lastStart) {
+      checkedLast = true;
+      break;
+    }
+    const size_t next = offset + MIC_WINDOW_HOP_SAMPLES;
+    offset = next >= lastStart ? lastStart : next;
   }
 
-  // Tetap menahan proses sampai tombol dilepas agar durasi aktif microphone
-  // benar-benar mengikuti tombol fisik, bukan timer perekaman.
-  while (digitalRead(MIC_BUTTON_PIN) == HIGH) {
-    size_t bytesRead = 0;
-    i2s_read(
-      MIC_I2S_PORT,
-      (void *)rawBuffer,
-      sizeof(rawBuffer),
-      &bytesRead,
-      portMAX_DELAY
-    );
-  }
-
-  Serial.println("Rekaman selesai.");
-  return true;
+  Serial.printf("[EI] Selesai %u window (last=%s). Tidak ada deteksi target >= %.2f.\n",
+                (unsigned)windowsChecked, checkedLast ? "YES" : "NO",
+                CONFIDENCE_THRESHOLD);
+  Serial.printf("[EI] Confidence target maksimum (saat top-1) = %.4f\n",
+                highestTargetConfidence);
+  return false;
 }
 
 bool ujiUcapan(
   const char *labelTarget,
   const char *modelLabelTarget,
-  LingoSpeechModel model
+  LingoSpeechModel model,
+  bool *percobaanDiproses
 ) {
   Serial.println();
   Serial.println("======================================");
   Serial.print("Target ucapan : ");
   Serial.println(labelTarget);
   Serial.println("======================================");
+  if (percobaanDiproses) *percobaanDiproses = false;
 
-  // Cue MIC tetap diputar setiap kali tombol MIC memulai percobaan.
-  myDFPlayer.stop();
-  delay(100);
-  Serial.println("Track 171 -> MIC MULAI (percobaan)");
-  myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
-  delay(DURASI_CUE_MIC_MS);
-  myDFPlayer.stop();
-  delay(100);
+  // Track 171 sudah selesai diputar sebelum percobaan dimulai.
+  // Baca INMP441 langsung saat MIC ditekan, tanpa delay DFPlayer.
+  const bool rekamanBerhasil = recordAudioWhileHeld();
 
-  // Rekam audio.
-  bool rekamanBerhasil = recordAudioWhileHeld();
-
+  // Pastikan suara 172 SELALU setelah recording selesai, tidak masuk dataset.
+  playMicOffCue();
   if (!rekamanBerhasil) {
-    Serial.println("ERROR: Rekaman gagal.");
+    Serial.println("ERROR: Rekaman gagal atau terlalu singkat.");
     return false;
   }
 
-  Serial.println("Memproses suara dengan Edge Impulse...");
+  Serial.println("Memproses SELURUH rekaman dengan jendela MFE 1 detik...");
+  Serial.printf("[MEM] Sebelum EI: free PSRAM=%u, free internal=%u bytes\n",
+                (unsigned)ESP.getFreePsram(), (unsigned)ESP.getFreeHeap());
 
-  const char *detectedLabel = nullptr;
-  float confidence = 0.0f;
-  bool inferenceBerhasil = lingoRecognize(
-    model,
-    audioBuffer,
-    LINGO_SPEECH_SAMPLE_COUNT,
-    &detectedLabel,
-    &confidence
-  );
+  bool inferenceBerhasil = false;
+  bool benar = recognizeAcrossRecording(model, modelLabelTarget, &inferenceBerhasil);
 
+  Serial.printf("[MEM] Sesudah EI: free PSRAM=%u, free internal=%u bytes\n",
+                (unsigned)ESP.getFreePsram(), (unsigned)ESP.getFreeHeap());
   if (!inferenceBerhasil) {
-    Serial.println("Inference gagal.");
+    Serial.println("[EI] Semua inferensi gagal: percobaan tidak dihitung.");
     return false;
   }
+  if (percobaanDiproses) *percobaanDiproses = true;
 
-  Serial.print("Target      : ");
-  Serial.println(modelLabelTarget);
-
-  Serial.print("Terdeteksi  : ");
-  Serial.println(detectedLabel);
-
-  Serial.print("Confidence  : ");
-  Serial.println(confidence, 4);
-
-  bool benar =
-    strcmp(detectedLabel, modelLabelTarget) == 0 &&
-    confidence >= CONFIDENCE_THRESHOLD;
-
-  if (benar) {
-    Serial.println(">>> UCAPAN BENAR <<<");
-  } else {
-    Serial.println(">>> UCAPAN BELUM SESUAI <<<");
-  }
-
+  if (benar) Serial.println(">>> UCAPAN BENAR (ada window valid) <<<");
+  else Serial.println(">>> UCAPAN BELUM SESUAI (tidak ada window valid) <<<");
   return benar;
 }
 
@@ -558,21 +697,26 @@ void handleMicButtonPress() {
     return;
   }
 
-  jumlahPercobaanBicara[i]++;
-
   Serial.printf(
     "Target %s -> Percobaan %d dari %d\n",
     labelTantanganBicara[i],
-    jumlahPercobaanBicara[i],
+    jumlahPercobaanBicara[i] + 1,
     MAX_PERCOBAAN_BICARA
   );
 
-  bool benar =
-    ujiUcapan(
-      labelTantanganBicara[i],
-      modelLabelTantanganBicara[i],
-      modelTantanganBicara[i]
-    );
+  bool percobaanDiproses = false;
+  bool benar = ujiUcapan(
+    labelTantanganBicara[i],
+    modelLabelTantanganBicara[i],
+    modelTantanganBicara[i],
+    &percobaanDiproses
+  );
+  if (!percobaanDiproses) {
+    Serial.println("Percobaan tidak dihitung (rekaman terlalu singkat atau inferensi gagal).");
+    playMicReadyCue();
+    return;
+  }
+  jumlahPercobaanBicara[i]++;
 
   if (benar) {
 
@@ -613,23 +757,16 @@ void handleMicButtonPress() {
         sisa
       );
 
-      Serial.println(
-        "Tekan GPIO 41 lagi untuk mencoba."
-      );
+      // Mainkan cue siap lagi untuk percobaan berikutnya, sesudah feedback SALAH.
+      delay(DURASI_CUE_MIC_MS);
+      playMicReadyCue();
+      Serial.println("Tekan GPIO 41 lagi untuk mencoba.");
 
     } else {
 
       Serial.println(
         "Percobaan ke-3 gagal."
       );
-
-      // Beri waktu audio "hampir benar" selesai sebelum menandai
-      // microphone tidak aktif lagi.
-      delay(DURASI_CUE_MIC_MS);
-      Serial.println("Track 172 -> MIC MATI");
-      myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
-      delay(DURASI_CUE_MIC_MS);
-      myDFPlayer.stop();
 
       Serial.println(
         "Tekan GO ke-8 (pin 15) untuk reset."
@@ -689,11 +826,7 @@ void handleButtonPress(int pinGlobal) {
             jumlahPercobaanBicara[i],
             MAX_PERCOBAAN_BICARA
           );
-          Serial.println("Track 171 -> MIC MULAI");
-          myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
-          delay(DURASI_CUE_MIC_MS);
-          myDFPlayer.stop();
-          Serial.println("Tahan tombol MIC GPIO 41 sambil berbicara.");
+          playMicReadyCue();
         }
 
         return;
@@ -1738,15 +1871,19 @@ void loop() {
   //
   // ========================================================
 
+  // Trigger hanya pada transisi LOW -> HIGH, agar tidak memproses berulang
+  // saat tombol masih ditahan atau kondisi halaman/target belum valid.
+  static bool micButtonWasHigh = false;
+  const bool micButtonIsHigh = (digitalRead(MIC_BUTTON_PIN) == HIGH);
   if (
     lingoReady &&
     wifiState != WIFI_FAILED &&
     wifiState != WIFI_FIRST_SETUP &&
-    digitalRead(MIC_BUTTON_PIN) == HIGH
+    micButtonIsHigh && !micButtonWasHigh
   ) {
-
     handleMicButtonPress();
   }
+  micButtonWasHigh = (digitalRead(MIC_BUTTON_PIN) == HIGH);
 
 
   // ========================================================

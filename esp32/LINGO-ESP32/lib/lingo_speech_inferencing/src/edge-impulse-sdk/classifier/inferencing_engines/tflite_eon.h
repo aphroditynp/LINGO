@@ -43,6 +43,20 @@
 #include "edge-impulse-sdk/classifier/ei_model_types.h"
 #include "edge-impulse-sdk/classifier/inferencing_engines/tflite_helper.h"
 #include "edge-impulse-sdk/classifier/ei_run_dsp.h"
+#if defined(LINGO_EI_HEAP_DIAGNOSTICS) && LINGO_EI_HEAP_DIAGNOSTICS && defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "esp_heap_caps.h"
+static void lingoEonCheckpoint(const char *stage) {
+    if (!heap_caps_check_integrity_all(false)) {
+        ei_printf("[HEAP-FAULT] EON stage=%s (before model init / after DSP)\n", stage);
+        heap_caps_check_integrity_all(true);
+        abort();
+    }
+    ei_printf("[HEAP-OK] EON stage=%s\n", stage);
+}
+#else
+static inline void lingoEonCheckpoint(const char *) {}
+#endif
+
 
 /**
  * Setup the TFLite runtime
@@ -66,9 +80,13 @@ static EI_IMPULSE_ERROR inference_tflite_setup(
     TfLiteTensor *outputs = *output_arg;
     ei_config_tflite_eon_graph_t *graph_config = (ei_config_tflite_eon_graph_t*)block_config->graph_config;
 
+    lingoEonCheckpoint("before model_init (DSP completed)");
     TfLiteStatus init_status = graph_config->model_init(ei_aligned_calloc);
+    lingoEonCheckpoint("after model_init");
     if (init_status != kTfLiteOk) {
         ei_printf("Failed to initialize the model (error code %d)\n", init_status);
+        // Compiled models may have allocated some buffers before failure.
+        graph_config->model_reset(ei_aligned_free);
         return EI_IMPULSE_TFLITE_ARENA_ALLOC_FAILED;
     }
 
@@ -161,6 +179,7 @@ EI_IMPULSE_ERROR run_nn_inference_from_dsp(
         p_tensor_arena);
 
     if (init_res != EI_IMPULSE_OK) {
+        ei_free(outputs);
         return init_res;
     }
 
@@ -226,6 +245,7 @@ EI_IMPULSE_ERROR run_nn_inference(
         p_tensor_arena);
 
     if (init_res != EI_IMPULSE_OK) {
+        ei_free(outputs);
         return init_res;
     }
 
@@ -338,6 +358,7 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
         p_tensor_arena);
 
     if (init_res != EI_IMPULSE_OK) {
+        ei_free(outputs);
         return init_res;
     }
 

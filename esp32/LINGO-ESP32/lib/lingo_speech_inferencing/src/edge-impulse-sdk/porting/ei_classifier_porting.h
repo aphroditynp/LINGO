@@ -370,8 +370,8 @@ void ei_free(void *ptr);
 
 #endif
 
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
-#define EI_MAX_OVERFLOW_BUFFER_COUNT	30
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(EI_MAX_OVERFLOW_BUFFER_COUNT)
+#define EI_MAX_OVERFLOW_BUFFER_COUNT 96
 #endif
 
 // End additional configuration

@@ -36,6 +36,20 @@
 #include "edge-impulse-sdk/tensorflow/lite/c/common.h"
 #include "edge-impulse-sdk/tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "edge-impulse-sdk/porting/ei_classifier_porting.h"
+#if defined(LINGO_EI_HEAP_DIAGNOSTICS) && LINGO_EI_HEAP_DIAGNOSTICS && defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "esp_heap_caps.h"
+static void lingoModelHeapProbe(const char *stage, size_t op) {
+    if (!heap_caps_check_integrity_all(false)) {
+        ei_printf("[HEAP-FAULT] model=1141462 stage=%s op=%lu\n", stage, (unsigned long)op);
+        heap_caps_check_integrity_all(true);
+        abort(); // stop before freeing damaged PSRAM allocation
+    }
+}
+#define LINGO_MODEL_PROBE(stage, op) lingoModelHeapProbe(stage, op)
+#else
+#define LINGO_MODEL_PROBE(stage, op) ((void)0)
+#endif
+
 
 #if EI_CLASSIFIER_PRINT_STATE
 #if defined(__cplusplus) && EI_C_LINKAGE == 1
@@ -96,7 +110,10 @@ namespace {
 #if defined(EI_CLASSIFIER_ALLOCATION_STATIC_HIMAX) || defined(EI_CLASSIFIER_ALLOCATION_STATIC_HIMAX_GNU)
 constexpr int kTensorArenaSize = 174464;
 #else
-constexpr int kTensorArenaSize = 173440;
+// LINGO N16R8: extra room for EON persistent allocations on ESP32-S3.
+// The arena uses ei_aligned_calloc -> ei_calloc -> PSRAM on this board.
+// Original generated arena (173440 bytes) exhausted overflow slots.
+constexpr int kTensorArenaSize = 512 * 1024;
 #endif
 
 #if defined(EI_CLASSIFIER_ALLOCATION_STATIC)
@@ -5956,6 +5973,7 @@ TfLiteStatus tflite_learn_1141462_5_init( void*(*alloc_fnc)(size_t,size_t) ) {
 #else
   memset(tensor_arena, 0, kTensorArenaSize);
 #endif
+  LINGO_MODEL_PROBE("arena_allocated", 0);
   tensor_boundary = tensor_arena;
   current_location = tensor_arena + kTensorArenaSize;
 
@@ -6002,6 +6020,7 @@ TfLiteStatus tflite_learn_1141462_5_init( void*(*alloc_fnc)(size_t,size_t) ) {
       if (registrations[used_ops[i]].init) {
         tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
       }
+      LINGO_MODEL_PROBE("operator_init", i);
     }
   }
   current_subgraph_index = 0;
@@ -6016,6 +6035,7 @@ TfLiteStatus tflite_learn_1141462_5_init( void*(*alloc_fnc)(size_t,size_t) ) {
           return status;
         }
       }
+      LINGO_MODEL_PROBE("operator_prepare", i);
     }
   }
   current_subgraph_index = 0;
@@ -6101,13 +6121,18 @@ TfLiteStatus tflite_learn_1141462_5_invoke() {
     if (status != kTfLiteOk) {
       return status;
     }
+    LINGO_MODEL_PROBE("operator_invoke", i);
   }
   return kTfLiteOk;
 }
 
 TfLiteStatus tflite_learn_1141462_5_reset( void (*free_fnc)(void* ptr) ) {
 #ifdef EI_CLASSIFIER_ALLOCATION_HEAP
-  free_fnc(tensor_arena);
+  // Also safe when initialization failed before arena allocation.
+  if (tensor_arena != nullptr) {
+    free_fnc(tensor_arena);
+    tensor_arena = nullptr;
+  }
 #endif
 
   // scratch buffers are allocated within the arena, so just reset the counter so memory can be reused
