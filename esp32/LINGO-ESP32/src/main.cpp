@@ -17,7 +17,7 @@
 #include "esp_heap_caps.h"
 
 #ifndef LINGO_WIFI_ENABLED
-#define LINGO_WIFI_ENABLED 0
+#define LINGO_WIFI_ENABLED 1
 #endif
 
 //BACA DULUUUUUUUUUUUUUUUUUUUUU
@@ -283,7 +283,7 @@ KuisInteraktif soalMencocokkan[JUMLAH_SOAL_MENCOCOKKAN] = {
   // Misal: Kiri(21)="SA"(163), Kanan(26)="PI"(164), Benar="SAPI"(165)
   {17, 36, 9, 43, 50},
   {21, 37, 26, 44, 51},
-  {25, 38, 27, 45, 52},
+  {25, 38, 30, 45, 52},
   {29, 39, 34, 46, 53},
   {33, 40, 18, 47, 54},
   {37, 41, 22, 48, 55} 
