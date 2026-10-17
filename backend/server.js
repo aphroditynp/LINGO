@@ -568,51 +568,71 @@ app.post(
             }
 
 
-            console.log(
-                "DATA MASUK:",
-                data
-            );
-
-
-            await db
-                .collection("sessions")
-                .add({
-
-                    user_id:
-                        pairedUserId,
-
-                    device_id:
-                        deviceId,
-
-                    module:
-                        data.module,
-
-                    correct:
-                        Number(
-                            data.correct || 0
-                        ),
-
-                    wrong:
-                        Number(
-                            data.wrong || 0
-                        ),
-
-                    accuracy:
-                        Number(
-                            data.accuracy || 0
-                        ),
-
-                    duration:
-                        Number(
-                            data.duration || 0
-                        ),
-
-                    date:
-                        new Date()
-                            .toISOString()
-
-                });
-
+            // Kompatibel dengan payload lama, tetapi menerima detail per halaman.
+            // user_id SELALU dari pairing device pada Firestore, bukan request ESP.
+            const catalog = {
+                tantangan_bicara_1: { module: "Tantangan Bicara 1", page: 14, tasks: 4 },
+                tantangan_bicara_2: { module: "Tantangan Bicara 2", page: 16, tasks: 12 },
+                misi_juara_1: { module: "Misi Juara 1", page: 18, tasks: 2 },
+                misi_juara_2: { module: "Misi Juara 2", page: 20, tasks: 2 },
+                mencocokkan_suku_kata: { module: "Mencocokkan Suku Kata", page: 22, tasks: 7 }
+            };
+            const moduleId = typeof data.module_id === "string" ? data.module_id : null;
+            const known = moduleId ? catalog[moduleId] : null;
+            if (moduleId && !known) {
+                return res.status(400).json({status:"error", message:"module_id tidak dikenal"});
+            }
+            const status = data.status === "pending_model" ? "pending_model" : "graded";
+            if (known && known.page === 16 && status !== "pending_model") {
+                return res.status(400).json({status:"error", message:"Model halaman 16 belum tersedia"});
+            }
+            const total = known ? known.tasks : Math.max(0, Number(data.total_question) || 0);
+            const correct = Number(data.correct || 0);
+            const wrong = Number(data.wrong || 0);
+            const attempts = Number(data.attempts ?? (correct + wrong));
+            const duration = Number(data.duration || 0);
+            if (![total,correct,wrong,attempts,duration].every(Number.isFinite) ||
+                correct < 0 || wrong < 0 || attempts < 0 || duration < 0 ||
+                (known && correct > total) || correct > 1000 || wrong > 10000 || attempts > 10000) {
+                return res.status(400).json({status:"error", message:"Nilai sesi tidak valid"});
+            }
+            const accuracy = status === "pending_model"
+                ? null
+                : (total > 0 ? Math.round(100 * correct / total) : Number(data.accuracy || 0));
+            const sessionId = typeof data.session_id === "string" ? data.session_id : "";
+            if (sessionId && !/^[A-Za-z0-9_-]{5,100}$/.test(sessionId)) {
+                return res.status(400).json({status:"error", message:"session_id tidak valid"});
+            }
+            const session = {
+                user_id: pairedUserId,
+                device_id: deviceId,
+                module: known ? known.module : String(data.module || "Modul LINGO"),
+                module_id: moduleId,
+                page_number: known ? known.page : (data.page_number ?? null),
+                total_question: total || null,
+                correct,
+                wrong,
+                attempts,
+                accuracy,
+                duration,
+                status,
+                date: new Date().toISOString()
+            };
+            if (sessionId) {
+                // Deterministic document ID: retry upload tidak membuat duplikasi.
+                const ref = db.collection("sessions").doc(sessionId);
+                const prev = await ref.get();
+                if (prev.exists) {
+                    if (prev.data().device_id !== deviceId) {
+                        return res.status(409).json({status:"error", message:"session_id sudah dipakai device lain"});
+                    }
+                    return res.status(200).json({status:"success", message:"Sesi sudah tersimpan", session_id:sessionId, duplicate:true});
+                }
+                await ref.set(session);
+            } else {
+                await db.collection("sessions").add(session);
+            }
+            console.log("SESSION PAGE:", deviceId, session.module, session.accuracy);
 
             res.status(200)
                 .json({

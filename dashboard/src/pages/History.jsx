@@ -494,8 +494,7 @@ function History({
 
                                                             (
 
-                                                                item.module ===
-                                                                "Tantangan Bicara"
+                                                                item.module?.startsWith("Tantangan Bicara")
 
                                                                     ?
 
@@ -503,8 +502,7 @@ function History({
 
                                                                     :
 
-                                                                item.module ===
-                                                                "Mencocokan Suku Kata"
+                                                                item.module?.startsWith("Mencocok")
 
                                                                     ?
 
@@ -578,9 +576,7 @@ function History({
                                                         }
                                                     >
 
-                                                        {
-                                                            item.accuracy
-                                                        }%
+                                                        {item.status === "pending_model" ? "Belum dinilai" : `${item.accuracy}%`}
 
                                                     </span>
 

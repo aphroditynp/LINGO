@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <Wire.h>
@@ -48,8 +49,14 @@ DFRobotDFPlayerMini myDFPlayer;
 
 WiFiManager wm;
 
-String serverURL =
-  "http://192.168.1.7:3000/api/session/upload";
+// Backend yang juga dipakai oleh dashboard/src/api.js.
+// Untuk testing lokal, alamat bisa diganti menjadi IP LAN komputer.
+const char *serverURL = "https://lingo-7ri9.onrender.com/api/session/upload";
+// Ganti dengan ID perangkat yang sudah terdaftar dan dipasangkan di website.
+const char *LINGO_DEVICE_ID = "LINGO001";
+// HANYA UNTUK PENGUJIAN: HTTPS tanpa validasi sertifikat.
+// Untuk produksi, pasang sertifikat root CA menggunakan client.setCACert(...).
+const bool LINGO_INSECURE_HTTPS_TEST_ONLY = true;
 
 #define TRACK_WIFI_SETUP 399
 #define TRACK_WIFI_FAILED 400
@@ -100,7 +107,7 @@ static int16_t *audioBuffer = nullptr;
 // Memeriksa BANYAK jendela meningkatkan peluang salah-terima.
 // Mulai dengan ambang 0.85, lalu kalibrasi menggunakan kata target,
 // hard-negative dan noise yang direkam dengan mikrofon INMP441.
-const float CONFIDENCE_THRESHOLD = 0.75f;
+const float CONFIDENCE_THRESHOLD = 0.65f; // sesuai main.cpp yang diberikan; uji FAR sebelum produksi
 const size_t LINGO_SPEECH_SAMPLE_COUNT = 16000; // 1 detik per inferensi
 const int LINGO_SPEECH_SAMPLE_RATE = 16000;
 const int AUDIO_MIC_MULAI = 171;
@@ -108,10 +115,13 @@ const int AUDIO_MIC_MATI  = 172;
 const unsigned long DURASI_CUE_MIC_MS = 1200;
 const size_t MIC_MIN_VALID_SAMPLES = 2400; // 150 ms, hindari klik tombol
 const size_t MIC_MAX_RECORD_SAMPLES = 5 * LINGO_SPEECH_SAMPLE_COUNT; // 5 detik
-const size_t MIC_WINDOW_HOP_SAMPLES = 4000; // 250 ms / overlap 75%
-// Suara mulai (171) diputar saat memilih kata / siap mengulang,
-// SEBELUM tombol ditekan. Suara mati (172) diputar setelah tombol dilepas.
-// Jangan memutar petunjuk audio selagi microphone mengambil sampel.
+// Geser parameter ini jika ingin mengubah waktu mulai analisis audio.
+const float INFERENCE_START_SECONDS = 0.5f; // Mulai dari 0,5 detik
+const size_t MIC_WINDOW_HOP_SAMPLES = 8000; // 500 ms / overlap 50%
+// Track 171 diputar segera ketika tombol MIC GPIO41 ditekan.
+// Tunggu cue selesai sebelum sampling I2S agar suara DFPlayer tidak terekam.
+// Tombol harus tetap ditahan selama cue dan ucapan.
+// Track 172 diputar setelah tombol dilepas / rekaman dihentikan.
 static int16_t *recordingBuffer = nullptr; // seluruh audio dalam PSRAM
 static size_t recordedAudioSamples = 0;
 
@@ -175,6 +185,7 @@ const int trackKonten[11][48] = {
 //   GPIO 41 -> tombol MIC fisik
 // =========================================================
 
+const int HALAMAN_TANTANGAN_BICARA_2 = 8; // buku halaman 16
 const int HALAMAN_TANTANGAN_BICARA = 7; // pinTombolGo[7] = 15
 
 const int pinTantanganBicara[4] = {
@@ -198,6 +209,8 @@ const char *modelLabelTantanganBicara[4] = {
   "lula"
 };
 
+// These enums now choose the expected label in ONE shared six-class model.
+// Each button no longer loads a different neural network.
 const LingoSpeechModel modelTantanganBicara[4] = {
   LINGO_MODEL_ITU,
   LINGO_MODEL_AKU,
@@ -207,8 +220,11 @@ const LingoSpeechModel modelTantanganBicara[4] = {
 
 #define MIC_BUTTON_PIN 41 // Tombol MIC fisik langsung ke GPIO 41
 
+// Status tantangan disimpan per kata sampai GO ke-8 dipilih untuk reset.
 const int MAX_PERCOBAAN_BICARA = 3;
+const int AUDIO_TIGA_KALI_SALAH = 450; // MP3/0450.mp3 pada kartu SD DFPlayer
 int jumlahPercobaanBicara[4] = {0, 0, 0, 0};
+bool kataSudahBenar[4] = {false, false, false, false};
 int targetBicaraAktif = -1;
 
 // =========================================================
@@ -274,6 +290,236 @@ KuisInteraktif soalMencocokkan[JUMLAH_SOAL_MENCOCOKKAN] = {
 };
 
 
+
+// =========================================================
+// PENILAIAN PER HALAMAN + QUEUE UPLOAD NVS
+// Nomor halaman buku bukan indeks GO; map mengikuti gambar buku.
+// Skor = banyak soal/kata UNIK yang benar / total tugas halaman.
+// Wrong = banyak percobaan gagal (tidak mengurangi total tugas).
+// =========================================================
+struct LingoPageDefinition {
+  int goIndex;
+  int bookPage;
+  const char *module;
+  const char *moduleId;
+  uint8_t tasks;
+  bool modelAvailable;
+};
+
+const LingoPageDefinition PAGE_DEFS[] = {
+  {7, 14, "Tantangan Bicara 1", "tantangan_bicara_1", 4, true},
+  {8, 16, "Tantangan Bicara 2", "tantangan_bicara_2", 12, false},
+  {6, 18, "Misi Juara 1", "misi_juara_1", 2, true},
+  {9, 20, "Misi Juara 2", "misi_juara_2", 2, true},
+  {10, 22, "Mencocokkan Suku Kata", "mencocokkan_suku_kata", 7, true}
+};
+constexpr int PAGE_COUNT = sizeof(PAGE_DEFS) / sizeof(PAGE_DEFS[0]);
+constexpr int QUEUE_CAPACITY = 12;
+
+struct PageUpload {
+  char sessionId[76];
+  char module[40];
+  char moduleId[32];
+  uint16_t bookPage;
+  uint8_t totalTasks;
+  uint8_t correct;
+  uint16_t wrong;
+  uint16_t attempts;
+  uint32_t durationSec;
+  bool pendingModel;
+};
+
+struct PageProgress {
+  int pageDef = -1;
+  unsigned long startedAt = 0;
+  uint16_t wrong = 0;
+  uint16_t attempts = 0;
+  bool touched = false;
+  bool passed[12] = {false};
+};
+
+PageProgress pageProgress;
+PageUpload pageQueue[QUEUE_CAPACITY] = {};
+uint8_t queueCount = 0;
+unsigned long lastUploadAttemptMs = 0;
+
+int pageDefinitionIndex(int goIndex) {
+  for (int j = 0; j < PAGE_COUNT; ++j)
+    if (PAGE_DEFS[j].goIndex == goIndex) return j;
+  return -1;
+}
+
+void savePageQueue() {
+  Preferences prefs;
+  if (!prefs.begin("lingo-scores", false)) return;
+  prefs.putUChar("count", queueCount);
+  prefs.putBytes("queue", pageQueue, sizeof(pageQueue));
+  prefs.end();
+}
+
+void loadPageQueue() {
+  Preferences prefs;
+  if (!prefs.begin("lingo-scores", true)) return;
+  uint8_t n = prefs.getUChar("count", 0);
+  size_t storedBytes = prefs.getBytesLength("queue");
+  if (n <= QUEUE_CAPACITY && storedBytes == sizeof(pageQueue)) {
+    prefs.getBytes("queue", pageQueue, sizeof(pageQueue));
+    queueCount = n;
+  }
+  prefs.end();
+  Serial.printf("[SKOR] %u sesi menunggu upload di NVS.\n", (unsigned)queueCount);
+}
+
+uint8_t numberCorrect(const PageProgress &progress) {
+  if (progress.pageDef < 0) return 0;
+  uint8_t count = 0;
+  for (int i = 0; i < PAGE_DEFS[progress.pageDef].tasks; ++i)
+    if (progress.passed[i]) ++count;
+  return count;
+}
+
+void printPageProgress() {
+  if (pageProgress.pageDef < 0) return;
+  const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
+  if (!d.modelAvailable) {
+    Serial.printf("[SKOR] Hal %d %s: model belum tersedia (TIDAK dinilai).\n", d.bookPage, d.module);
+    return;
+  }
+  Serial.printf("[SKOR] Hal %d %s: %u/%u benar | %u salah | %u percobaan | %.1f%%\n",
+    d.bookPage, d.module, (unsigned)numberCorrect(pageProgress), (unsigned)d.tasks,
+    (unsigned)pageProgress.wrong, (unsigned)pageProgress.attempts,
+    100.0f * numberCorrect(pageProgress) / d.tasks);
+}
+
+void beginPageScore(int goIndex) {
+  pageProgress = PageProgress{};
+  pageProgress.pageDef = pageDefinitionIndex(goIndex);
+  pageProgress.startedAt = millis();
+  if (pageProgress.pageDef >= 0) {
+    const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
+    Serial.printf("[SKOR] Mulai halaman buku %d: %s (%u tugas).\n", d.bookPage, d.module, (unsigned)d.tasks);
+    if (!d.modelAvailable) Serial.println("[SKOR] Model suara halaman ini belum tersedia; skor tidak akan dikarang.");
+  }
+}
+
+void notePageAnswer(int taskIndex, bool correct) {
+  if (pageProgress.pageDef < 0) return;
+  const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
+  if (!d.modelAvailable || taskIndex < 0 || taskIndex >= d.tasks) return;
+  if (pageProgress.passed[taskIndex]) return; // jawaban benar dikunci
+  ++pageProgress.attempts;
+  pageProgress.touched = true;
+  if (correct) pageProgress.passed[taskIndex] = true;
+  else ++pageProgress.wrong;
+  printPageProgress();
+}
+
+void completePageScore() {
+  if (pageProgress.pageDef < 0 || !pageProgress.touched) {
+    pageProgress = PageProgress{};
+    return;
+  }
+  const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
+  PageUpload payload = {};
+  snprintf(payload.sessionId, sizeof(payload.sessionId), "%s_%08lx%08lx", LINGO_DEVICE_ID,
+           (unsigned long)esp_random(), (unsigned long)millis());
+  strlcpy(payload.module, d.module, sizeof(payload.module));
+  strlcpy(payload.moduleId, d.moduleId, sizeof(payload.moduleId));
+  payload.bookPage = d.bookPage;
+  payload.totalTasks = d.tasks;
+  payload.correct = numberCorrect(pageProgress);
+  payload.wrong = pageProgress.wrong;
+  payload.attempts = pageProgress.attempts;
+  payload.durationSec = (uint32_t)((millis() - pageProgress.startedAt) / 1000UL);
+  payload.pendingModel = !d.modelAvailable;
+  if (queueCount >= QUEUE_CAPACITY) {
+    Serial.println("[SKOR][ERROR] Queue upload penuh; data lama tidak ditimpa.");
+  } else {
+    pageQueue[queueCount++] = payload;
+    savePageQueue();
+    Serial.printf("[SKOR] Hal %d disimpan di NVS (%u dalam queue).\n", d.bookPage, (unsigned)queueCount);
+  }
+  pageProgress = PageProgress{};
+}
+
+void maybeFinishCompletedPage() {
+  if (pageProgress.pageDef < 0) return;
+  const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
+  if (d.modelAvailable && numberCorrect(pageProgress) == d.tasks) {
+    Serial.println("[SKOR] Seluruh tugas halaman benar; simpan sesi sekarang.");
+    completePageScore();
+  }
+}
+
+void markPage16NotAssessed(int pin) {
+  if (pageProgress.pageDef != pageDefinitionIndex(HALAMAN_TANTANGAN_BICARA_2)) return;
+  pageProgress.touched = true;
+  ++pageProgress.attempts;
+  Serial.printf("[SKOR] Hal 16 pin %d: belum ada model ucapan; tidak menghitung benar/salah.\n", pin);
+}
+
+bool uploadPagePayload(const PageUpload &s) {
+#if !LINGO_WIFI_ENABLED
+  (void)s;
+  return false;
+#else
+  if (WiFi.status() != WL_CONNECTED) return false;
+  WiFiClientSecure client;
+  if (LINGO_INSECURE_HTTPS_TEST_ONLY) client.setInsecure();
+  else {
+    Serial.println("[UPLOAD] Sertifikat CA belum diisi. Mode produksi belum diaktifkan.");
+    return false;
+  }
+  HTTPClient http;
+  if (!http.begin(client, serverURL)) return false;
+  http.setTimeout(5000);
+  http.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<768> doc;
+  doc["session_id"] = s.sessionId;
+  doc["device_id"] = LINGO_DEVICE_ID;
+  doc["module"] = s.module;
+  doc["module_id"] = s.moduleId;
+  doc["page_number"] = s.bookPage;
+  doc["total_question"] = s.totalTasks;
+  doc["correct"] = s.correct;
+  doc["wrong"] = s.wrong;
+  doc["attempts"] = s.attempts;
+  doc["duration"] = s.durationSec;
+  if (s.pendingModel) {
+    doc["status"] = "pending_model";
+    doc["accuracy"] = nullptr;
+  } else {
+    doc["status"] = "graded";
+    doc["accuracy"] = roundf(100.0f * s.correct / s.totalTasks);
+  }
+  String body;
+  serializeJson(doc, body);
+  Serial.printf("[UPLOAD] %s, payload=%s\n", s.module, body.c_str());
+  int code = http.POST(body);
+  String response = http.getString();
+  http.end();
+  Serial.printf("[UPLOAD] HTTP %d %s\n", code, response.c_str());
+  return code >= 200 && code < 300;
+#endif
+}
+
+void sendSession() {
+  if (!queueCount) {
+    Serial.println("[UPLOAD] Queue kosong.");
+    return;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.printf("[UPLOAD] Offline; %u sesi disimpan di NVS untuk retry.\n", (unsigned)queueCount);
+    return;
+  }
+  while (queueCount) {
+    if (!uploadPagePayload(pageQueue[0])) break;
+    for (int i = 1; i < queueCount; ++i) pageQueue[i - 1] = pageQueue[i];
+    --queueCount;
+    savePageQueue();
+  }
+}
+
 // =========================================================
 // FUNGSI TANTANGAN BICARA
 // =========================================================
@@ -299,6 +545,7 @@ void enterOfflineMode();
 void resetTantanganBicara() {
   for (int i = 0; i < 4; i++) {
     jumlahPercobaanBicara[i] = 0;
+    kataSudahBenar[i] = false;
   }
 
   targetBicaraAktif = -1;
@@ -402,16 +649,16 @@ bool initMicrophone() {
   return true;
 }
 
-// Suara 171 berarti siap merekam. Diputar SEBELUM tombol MIC ditekan
-// untuk mencegah anak bicara saat audio cue terdengar dan terekam.
+// Suara 171 diputar pada event tombol MIC ditekan.
+// Perekaman dimulai setelah cue berhenti agar suaranya tidak terekam.
 void playMicReadyCue() {
-  Serial.println("Track 171 -> MIC MULAI / SIAP");
+  Serial.println("[MIC] GPIO 41 ditekan: Track 171 -> MIC MULAI");
   myDFPlayer.stop();
   delay(60);
   myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
   delay(DURASI_CUE_MIC_MS);
   myDFPlayer.stop();
-  Serial.println("[MIC] SIAP. Tekan GPIO 41, bicara, lalu LEPAS.");
+  Serial.println("[MIC] Cue selesai. Mulai bicara sambil tetap menahan GPIO 41, lalu LEPAS.");
 }
 
 // Suara 172 hanya diputar SESUDAH semua sampel terkumpul.
@@ -539,9 +786,12 @@ void prepareInferenceWindow(size_t offset) {
   }
 }
 
-// Jalankan inferensi di SELURUH rekaman, bukan satu detik terakhir.
-// Jika ada SATU jendela dengan target dan confidence >= batas, langsung BENAR.
-// Periksa hingga jendela terakhir walaupun offset-nya tidak kelipatan 250ms.
+// Periksa mulai INFERENCE_START_SECONDS (default 0,5 s; window 0,5-1,5 s).
+// Jika rekaman tidak cukup panjang untuk window awal, gunakan window
+// TERAKHIR yang tersedia agar ucapan pendek tidak otomatis terlewat.
+// Ukuran input MFE tetap 1 detik (16.000 sampel), hop default 500 ms.
+// Jika satu window sesuai target dengan confidence >= threshold, hentikan.
+// Stopwatch berbasis millis() mengukur durasi proses EI per window + total.
 bool recognizeAcrossRecording(
   LingoSpeechModel model, const char *target,
   bool *inferenceSucceeded
@@ -552,26 +802,60 @@ bool recognizeAcrossRecording(
   const size_t lastStart = (recordedAudioSamples > LINGO_SPEECH_SAMPLE_COUNT)
     ? recordedAudioSamples - LINGO_SPEECH_SAMPLE_COUNT : 0;
 
-  size_t offset = 0;
+  // Konversi detik ke sampel, tanpa mengubah durasi window (1 detik).
+  const size_t desiredStart = (size_t)(
+    INFERENCE_START_SECONDS * (float)LINGO_SPEECH_SAMPLE_RATE
+  );
+  // Gunakan start yang diminta jika masih tersedia 1 window penuh.
+  // Jika rekaman lebih singkat, gunakan window paling akhir.
+  // Untuk rekaman <1 detik, prepareInferenceWindow() menambahkan silence.
+  const size_t firstStart =
+    (recordedAudioSamples >= desiredStart + LINGO_SPEECH_SAMPLE_COUNT)
+      ? desiredStart
+      : lastStart;
+
+  size_t offset = firstStart;
   size_t windowsChecked = 0;
   float highestTargetConfidence = 0.0f;
-  bool checkedLast = false;
+  const uint32_t totalStartMs = millis();
+
+  Serial.printf("[EI][TIMER] Mulai inferensi | rekaman=%.2f s | jendela awal=%.2f-%.2f s | hop=%.0f ms\n",
+                (float)recordedAudioSamples / LINGO_SPEECH_SAMPLE_RATE,
+                (float)firstStart / LINGO_SPEECH_SAMPLE_RATE,
+                (float)(firstStart + LINGO_SPEECH_SAMPLE_COUNT) / LINGO_SPEECH_SAMPLE_RATE,
+                1000.0f * MIC_WINDOW_HOP_SAMPLES / LINGO_SPEECH_SAMPLE_RATE);
 
   while (true) {
     prepareInferenceWindow(offset);
     const char *predicted = nullptr;
     float confidence = 0.0f;
+    Serial.printf("[EI][PROSES] Window %u: %.2f-%.2f s | waktu berjalan %.2f s...\n",
+                  (unsigned)(windowsChecked + 1),
+                  (float)offset / LINGO_SPEECH_SAMPLE_RATE,
+                  (float)(offset + LINGO_SPEECH_SAMPLE_COUNT) / LINGO_SPEECH_SAMPLE_RATE,
+                  (float)(uint32_t)(millis() - totalStartMs) / 1000.0f);
+
+    const uint32_t windowStartMs = millis();
     const bool ok = lingoRecognize(
       model, audioBuffer, LINGO_SPEECH_SAMPLE_COUNT,
       &predicted, &confidence
     );
+    const uint32_t windowMs = (uint32_t)(millis() - windowStartMs);
+    const uint32_t elapsedMs = (uint32_t)(millis() - totalStartMs);
+    ++windowsChecked;
+
+    Serial.printf("[EI][TIMER] Window %u: %lu ms | total berjalan: %.2f s\n",
+                  (unsigned)windowsChecked,
+                  (unsigned long)windowMs,
+                  (float)elapsedMs / 1000.0f);
+
     if (!ok || predicted == nullptr) {
-      Serial.println("[EI] Gagal inferensi window; tidak akan menyatakan BENAR.");
+      Serial.printf("[EI] Gagal inferensi window %u. Total=%.2f s. Tidak akan menyatakan BENAR.\n",
+                    (unsigned)windowsChecked, (float)elapsedMs / 1000.0f);
       if (inferenceSucceeded) *inferenceSucceeded = false;
       return false;
     }
     if (inferenceSucceeded) *inferenceSucceeded = true;
-    ++windowsChecked;
 
     const bool isTarget = strcmp(predicted, target) == 0;
     if (isTarget && confidence > highestTargetConfidence)
@@ -586,22 +870,22 @@ bool recognizeAcrossRecording(
     if (isTarget && confidence >= CONFIDENCE_THRESHOLD) {
       Serial.printf("[EI] TARGET TERDETEKSI di window %u! confidence=%.4f >= %.2f\n",
                     (unsigned)windowsChecked, confidence, CONFIDENCE_THRESHOLD);
-      return true; // Early exit: satu pengenalan valid sudah cukup
+      Serial.printf("[EI][TIMER] SELESAI (BENAR): %u window | total inferensi %.2f s\n",
+                    (unsigned)windowsChecked,
+                    (float)(uint32_t)(millis() - totalStartMs) / 1000.0f);
+      return true;
     }
 
-    if (offset == lastStart) {
-      checkedLast = true;
-      break;
-    }
+    if (offset == lastStart) break;
     const size_t next = offset + MIC_WINDOW_HOP_SAMPLES;
     offset = next >= lastStart ? lastStart : next;
   }
 
-  Serial.printf("[EI] Selesai %u window (last=%s). Tidak ada deteksi target >= %.2f.\n",
-                (unsigned)windowsChecked, checkedLast ? "YES" : "NO",
-                CONFIDENCE_THRESHOLD);
-  Serial.printf("[EI] Confidence target maksimum (saat top-1) = %.4f\n",
-                highestTargetConfidence);
+  Serial.printf("[EI] Tidak ada target >= %.2f (confidence target maksimum saat top-1 = %.4f).\n",
+                CONFIDENCE_THRESHOLD, highestTargetConfidence);
+  Serial.printf("[EI][TIMER] SELESAI (BELUM SESUAI): %u window | total inferensi %.2f s\n",
+                (unsigned)windowsChecked,
+                (float)(uint32_t)(millis() - totalStartMs) / 1000.0f);
   return false;
 }
 
@@ -618,8 +902,8 @@ bool ujiUcapan(
   Serial.println("======================================");
   if (percobaanDiproses) *percobaanDiproses = false;
 
-  // Track 171 sudah selesai diputar sebelum percobaan dimulai.
-  // Baca INMP441 langsung saat MIC ditekan, tanpa delay DFPlayer.
+  // Track 171 sudah diputar pada event penekanan GPIO41.
+  // Rekam setelah cue selesai agar audio DFPlayer tidak ikut masuk ke MFE.
   const bool rekamanBerhasil = recordAudioWhileHeld();
 
   // Pastikan suara 172 SELALU setelah recording selesai, tidak masuk dataset.
@@ -629,7 +913,9 @@ bool ujiUcapan(
     return false;
   }
 
-  Serial.println("Memproses SELURUH rekaman dengan jendela MFE 1 detik...");
+  Serial.printf("Memproses audio mulai detik %.2f (rekaman pendek: window akhir), hop %.0f ms, model gabungan...\n",
+                INFERENCE_START_SECONDS,
+                1000.0f * MIC_WINDOW_HOP_SAMPLES / LINGO_SPEECH_SAMPLE_RATE);
   Serial.printf("[MEM] Sebelum EI: free PSRAM=%u, free internal=%u bytes\n",
                 (unsigned)ESP.getFreePsram(), (unsigned)ESP.getFreeHeap());
 
@@ -681,6 +967,15 @@ void handleMicButtonPress() {
 
   int i = targetBicaraAktif;
 
+  // Kata yang sudah BENAR tidak boleh diuji ulang sekalipun dipilih lagi.
+  // Pengecekan sebelum track 171, rekaman, dan Edge Impulse.
+  if (kataSudahBenar[i]) {
+    Serial.printf("[KUNCI] %s sudah BENAR. Tidak bisa dicoba lagi.\n",
+                  labelTantanganBicara[i]);
+    Serial.println("Pilih kata lain atau reset dengan GO ke-8 (pin 15).");
+    return;
+  }
+
   if (
     jumlahPercobaanBicara[i] >=
     MAX_PERCOBAAN_BICARA
@@ -694,6 +989,14 @@ void handleMicButtonPress() {
       "Tekan GO ke-8 (pin 15) untuk reset."
     );
 
+    return;
+  }
+
+  // Putar audio MIC MULAI tepat pada penekanan GPIO41, bukan saat pilih kata.
+  // Tunggu track selesai dahulu: rekaman setelah cue, tanpa kontaminasi speaker.
+  playMicReadyCue();
+  if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
+    Serial.println("[MIC] GPIO 41 dilepas saat cue 171. Tidak merekam / tidak mengurangi percobaan.");
     return;
   }
 
@@ -713,10 +1016,12 @@ void handleMicButtonPress() {
   );
   if (!percobaanDiproses) {
     Serial.println("Percobaan tidak dihitung (rekaman terlalu singkat atau inferensi gagal).");
-    playMicReadyCue();
+    Serial.println("Tekan kembali GPIO 41 untuk mendengar cue MIC MULAI dan mencoba lagi.");
     return;
   }
   jumlahPercobaanBicara[i]++;
+  notePageAnswer(i, benar);
+  maybeFinishCompletedPage();
 
   if (benar) {
 
@@ -728,49 +1033,32 @@ void handleMicButtonPress() {
       AUDIO_BENAR
     );
 
-    jumlahPercobaanBicara[i] = 0;
-
+    // Jangan nolkan jumlah percobaan. Kunci kata ini sampai reset.
+    kataSudahBenar[i] = true;
     targetBicaraAktif = -1;
 
-    Serial.println(
-      "Pilih kalimat berikutnya."
-    );
+    Serial.printf("[KUNCI] %s selesai dengan BENAR.\n", labelTantanganBicara[i]);
+    Serial.println("Kata ini tidak dapat dicoba lagi sampai GO ke-8 di-reset.");
+    Serial.println("Pilih kata berikutnya.");
 
   } else {
 
-    Serial.println(
-      "Kalimat SALAH."
-    );
+    Serial.println("Kalimat SALAH.");
 
-    myDFPlayer.playMp3Folder(
-      AUDIO_SALAH
-    );
-
-    int sisa =
-      MAX_PERCOBAAN_BICARA -
-      jumlahPercobaanBicara[i];
-
+    int sisa = MAX_PERCOBAAN_BICARA - jumlahPercobaanBicara[i];
     if (sisa > 0) {
-
-      Serial.printf(
-        "Sisa percobaan: %d\n",
-        sisa
-      );
-
-      // Mainkan cue siap lagi untuk percobaan berikutnya, sesudah feedback SALAH.
-      delay(DURASI_CUE_MIC_MS);
-      playMicReadyCue();
-      Serial.println("Tekan GPIO 41 lagi untuk mencoba.");
-
+      // Hanya percobaan salah ke-1 dan ke-2 memainkan track 31.
+      myDFPlayer.playMp3Folder(AUDIO_SALAH);
+      Serial.printf("Sisa percobaan: %d\n", sisa);
+      Serial.println("Tekan GPIO 41 lagi untuk mencoba (track 171 akan diputar).");
     } else {
-
-      Serial.println(
-        "Percobaan ke-3 gagal."
-      );
-
-      Serial.println(
-        "Tekan GO ke-8 (pin 15) untuk reset."
-      );
+      // Percobaan salah ke-3: ganti suara salah biasa dengan track 450.
+      // Memutar 31 tepat sebelumnya berisiko diinterupsi oleh DFPlayer.
+      Serial.printf("[BATAS] %s sudah SALAH 3 kali. Track 450.\n",
+                    labelTantanganBicara[i]);
+      myDFPlayer.playMp3Folder(AUDIO_TIGA_KALI_SALAH);
+      targetBicaraAktif = -1;
+      Serial.println("Kata ini dikunci sampai reset GO ke-8 (pin 15).");
     }
   }
 }
@@ -785,7 +1073,9 @@ void handleButtonPress(int pinGlobal) {
   // 1. Cek tombol GO
   for (int i = 0; i < TOTAL_HALAMAN; i++) {
     if (pinGlobal == pinTombolGo[i]) {
-      halamanAktif = i; 
+      completePageScore();
+      halamanAktif = i;
+      beginPageScore(i); 
       soalAktif = -1; 
       Serial.printf("Tombol GO %d ditekan. Masuk ke Halaman Indeks %d\n", pinGlobal, halamanAktif);
       myDFPlayer.playMp3Folder(audioTombolGo[i]); 
@@ -811,22 +1101,31 @@ void handleButtonPress(int pinGlobal) {
     // A. SW1/SW3/SW5/SW7 hanya memilih kalimat target.
     for (int i = 0; i < 4; i++) {
       if (pinGlobal == pinTantanganBicara[i]) {
-        targetBicaraAktif = i;
-
         Serial.println();
         Serial.print("Kalimat dipilih: ");
         Serial.println(labelTantanganBicara[i]);
 
+        if (kataSudahBenar[i]) {
+          // Jangan aktifkan target yang sudah lulus: tidak ada cue atau rekaman.
+          targetBicaraAktif = -1;
+          Serial.println("[KUNCI] Kata ini sudah BENAR dan tidak dapat diulang.");
+          Serial.println("Pilih kata lain atau GO ke-8 untuk reset.");
+          return;
+        }
+
         if (jumlahPercobaanBicara[i] >= MAX_PERCOBAAN_BICARA) {
-          Serial.println("Batas 3 percobaan untuk kalimat ini sudah tercapai.");
+          targetBicaraAktif = -1;
+          Serial.println("Batas 3 percobaan untuk kata ini sudah tercapai.");
           Serial.println("Tekan GO ke-8 (pin 15) untuk reset.");
+          return;
         } else {
+          targetBicaraAktif = i;
           Serial.printf(
             "Percobaan terpakai: %d/%d\n",
             jumlahPercobaanBicara[i],
             MAX_PERCOBAAN_BICARA
           );
-          playMicReadyCue();
+          Serial.println("Tekan GPIO 41 untuk memainkan track 171 (MIC MULAI), lalu bicara.");
         }
 
         return;
@@ -836,6 +1135,13 @@ void handleButtonPress(int pinGlobal) {
     // B. Tombol MIC sekarang menggunakan GPIO 41.
     // Pemrosesannya dilakukan di loop() melalui
     // handleMicButtonPress().
+  }
+
+  // Halaman 16 memiliki 12 kata berbeda dan belum ditraining dalam model gabungan.
+  // Log aktivitas halaman, tanpa memberi nilai palsu.
+  if (halamanAktif == HALAMAN_TANTANGAN_BICARA_2) {
+    markPage16NotAssessed(pinGlobal);
+    return;
   }
 
   // 3. Cek input Misi Juara dan Mencocokkan Suku Kata.
@@ -905,6 +1211,8 @@ void handleButtonPress(int pinGlobal) {
           }
 
           if (pinGlobal == daftarSoal[soalAktif].pinTombolJawaban) {
+            notePageAnswer(soalAktif, true);
+            maybeFinishCompletedPage();
             Serial.println("Pasangan BENAR!");
             if (daftarSoal[soalAktif].trackAudioGabungan != 0) {
               myDFPlayer.playMp3Folder(daftarSoal[soalAktif].trackAudioGabungan);
@@ -913,6 +1221,7 @@ void handleButtonPress(int pinGlobal) {
             }
             soalAktif = -1; // Reset memori
           } else {
+            notePageAnswer(soalAktif, false);
             Serial.println("Pasangan SALAH!");
             myDFPlayer.playMp3Folder(AUDIO_SALAH);
           }
@@ -1451,111 +1760,7 @@ void handleWiFiState() {
 // SEND SESSION
 // =========================================================
 
-void sendSession() {
-
-#if !LINGO_WIFI_ENABLED
-  Serial.println(
-    "Upload dibatalkan: WiFi dinonaktifkan."
-  );
-
-  return;
-#endif
-
-  if (
-    WiFi.status() !=
-    WL_CONNECTED
-  ) {
-
-    Serial.println(
-      "Upload dibatalkan: WiFi tidak terhubung."
-    );
-
-    return;
-  }
-
-  HTTPClient http;
-
-  http.begin(
-    serverURL
-  );
-
-  http.addHeader(
-    "Content-Type",
-    "application/json"
-  );
-
-  StaticJsonDocument<300>
-    doc;
-
-  doc["user_id"] =
-    "BIMA001";
-
-  doc["device_id"] =
-    "LINGO001";
-
-  doc["module"] =
-    "Tantangan Bicara";
-
-  doc["correct"] =
-    18;
-
-  doc["wrong"] =
-    2;
-
-  doc["accuracy"] =
-    90;
-
-  doc["duration"] =
-    600;
-
-  String json;
-
-  serializeJson(
-    doc,
-    json
-  );
-
-  Serial.println();
-  Serial.println(
-    "Sending session:"
-  );
-
-  Serial.println(
-    json
-  );
-
-  int code =
-    http.POST(
-      json
-    );
-
-  Serial.print(
-    "HTTP: "
-  );
-
-  Serial.println(
-    code
-  );
-
-  if (
-    code > 0
-  ) {
-
-    String response =
-      http.getString();
-
-    Serial.println(
-      "Server response:"
-    );
-
-    Serial.println(
-      response
-    );
-  }
-
-  http.end();
-}
-
+// Implementasi sendSession() sekarang ada di bagian PENILAIAN PER HALAMAN.
 
 // =========================================================
 // Main Setup & Loop
@@ -1726,6 +1931,7 @@ void setup() {
   // 6. WIFI
   // ========================================================
 
+  loadPageQueue();
   startWiFiSystem();
 
 
@@ -1774,6 +1980,11 @@ void loop() {
       ESP.restart();
     }
 
+
+    // u = upload ulang queue penilaian, p = skor halaman saat ini
+    if (command == 'u') sendSession();
+    if (command == 'p') printPageProgress();
+    if (command == 'f') { completePageScore(); sendSession(); }
 
     // --------------------------------------------
     // s = STATUS
@@ -1885,6 +2096,13 @@ void loop() {
   }
   micButtonWasHigh = (digitalRead(MIC_BUTTON_PIN) == HIGH);
 
+
+  // Retry upload tertunda hanya ketika WiFi terhubung (interval 15 detik).
+  if (lingoReady && WiFi.status() == WL_CONNECTED && queueCount &&
+      millis() - lastUploadAttemptMs > 15000) {
+    lastUploadAttemptMs = millis();
+    sendSession();
+  }
 
   // ========================================================
   // 4. BACA PCF8575

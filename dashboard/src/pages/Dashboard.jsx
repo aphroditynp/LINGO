@@ -15,6 +15,7 @@ from "../components/AccuracyChart";
 
 import ModuleChart
 from "../components/ModuleChart";
+import PageScoreBoard from "../components/PageScoreBoard";
 
 
 import API
@@ -283,15 +284,17 @@ function Dashboard({
 
 
 
+    const assessedSessions = filteredSessions.filter(x => x.status !== "pending_model" && x.accuracy != null);
+
     const averageScore =
 
-        filteredSessions.length > 0
+        assessedSessions.length > 0
 
             ?
 
             Math.round(
 
-                filteredSessions.reduce(
+                assessedSessions.reduce(
                     (total, item) => {
 
                         return (
@@ -314,7 +317,7 @@ function Dashboard({
 
                 /
 
-                filteredSessions.length
+                assessedSessions.length
 
             )
 
@@ -1128,6 +1131,8 @@ function Dashboard({
             }
 
 
+
+            <PageScoreBoard sessions={filteredSessions} />
 
             {/* =================================================
                 RECENT ACTIVITY

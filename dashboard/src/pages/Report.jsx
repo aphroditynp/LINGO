@@ -217,17 +217,18 @@ function Report({
 
     const totalSession =
         sessions.length;
+    const assessedSessions = sessions.filter(x => x.status !== "pending_model" && x.accuracy != null);
 
 
 
     const average =
-        totalSession > 0
+        assessedSessions.length > 0
 
             ?
 
             Math.round(
 
-                sessions.reduce(
+                assessedSessions.reduce(
                     (total, item) =>
                         total
                         +
@@ -240,7 +241,7 @@ function Report({
 
                 /
 
-                totalSession
+                assessedSessions.length
 
             )
 
@@ -272,7 +273,7 @@ function Report({
 
 
 
-    sessions.forEach(
+    assessedSessions.forEach(
         (item) => {
 
 
