@@ -16,6 +16,7 @@ from "../components/AccuracyChart";
 import ModuleChart
 from "../components/ModuleChart";
 import PageScoreBoard from "../components/PageScoreBoard";
+import DailyComparison from "../components/DailyComparison";
 
 
 import API
@@ -1131,6 +1132,9 @@ function Dashboard({
             }
 
 
+
+            {/* Perbandingan memakai SELURUH riwayat, tidak terpengaruh filter 7/30 hari. */}
+            <DailyComparison sessions={sessions} />
 
             <PageScoreBoard sessions={filteredSessions} />
 
