@@ -44,6 +44,7 @@ function timestampMs(value) {
   if (value && typeof value === "object") {
     const seconds = value.seconds ?? value._seconds;
     if (typeof seconds === "number") return seconds * 1000;
+    if (typeof value.toDate === "function") value = value.toDate();
   }
   const t = new Date(value).getTime();
   return Number.isFinite(t) ? t : 0;
@@ -69,7 +70,41 @@ export function latestSessionsOnDay(graded, day, selectedModule = "all") {
     if (s._day !== day || (selectedModule !== "all" && s._module !== selectedModule)) continue;
     const key = `${participantKey(s)}::${s._module}`;
     const old = byTask.get(key);
-    if (!old || timestampMs(s.date) >= timestampMs(old.date)) byTask.set(key, s);
+    if (!old || timestampMs(s.date) >= timestampMs(old.date)) byTask.set(key, { ...s, _sessionsCount: 1 });
+  }
+  return byTask;
+}
+
+// Rata-rata setiap sesi dalam satu hari, dikelompokkan menurut peserta + modul.
+// Semua sesi valid diberi bobot yang sama. Untuk filter "Semua modul",
+// perataan global kemudian memakai satu nilai per peserta-modul agar modul
+// yang dimainkan berulang kali tidak mendominasi modul lain.
+export function averageSessionsOnDay(graded, day, selectedModule = "all") {
+  const buckets = new Map();
+  for (const s of graded) {
+    if (s._day !== day || (selectedModule !== "all" && s._module !== selectedModule)) continue;
+    const key = `${participantKey(s)}::${s._module}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(s);
+  }
+
+  const byTask = new Map();
+  for (const [key, samples] of buckets) {
+    const last = samples.reduce((a, b) => timestampMs(a.date) >= timestampMs(b.date) ? a : b);
+    const sum = field => samples.reduce((acc, s) => acc + (numeric(s[field]) ?? 0), 0);
+    const qValues = samples.map(s => numeric(s.total_question));
+    const hasMixedQuestions = qValues.some(q => q !== qValues[0]);
+    byTask.set(key, {
+      ...last,
+      _accuracy: samples.reduce((acc, s) => acc + s._accuracy, 0) / samples.length,
+      _sessionsCount: samples.length,
+      _hasMixedQuestions: hasMixedQuestions,
+      // Bilangan benar/salah/percobaan adalah total dari seluruh sesi,
+      // bukan hasil terakhir. Persentase tetap rata-rata accuracy per sesi.
+      correct: sum("correct"), wrong: sum("wrong"), attempts: sum("attempts"),
+      total_question: hasMixedQuestions ? null : qValues[0],
+      is_demo: samples.some(s => s.is_demo === true),
+    });
   }
   return byTask;
 }
@@ -80,6 +115,7 @@ function aggregate(sessions) {
   const mean = items.length ? items.reduce((acc, s) => acc + s._accuracy, 0) / items.length : null;
   return {
     count: items.length,
+    sessions: items.reduce((n, s) => n + (s._sessionsCount ?? 1), 0),
     participants: new Set(items.map(participantKey)).size,
     modules: new Set(items.map(s => s._module)).size,
     average: mean,
@@ -90,10 +126,11 @@ function aggregate(sessions) {
   };
 }
 
-export function compareDays(sessions, dayA, dayB, selectedModule = "all") {
+export function compareDays(sessions, dayA, dayB, selectedModule = "all", method = "latest") {
   const graded = gradedSessions(sessions);
-  const left = latestSessionsOnDay(graded, dayA, selectedModule);
-  const right = latestSessionsOnDay(graded, dayB, selectedModule);
+  const selectOnDay = method === "average" ? averageSessionsOnDay : latestSessionsOnDay;
+  const left = selectOnDay(graded, dayA, selectedModule);
+  const right = selectOnDay(graded, dayB, selectedModule);
   const matching = [];
   let mismatchedQuestions = 0;
   for (const [key, a] of left) {
@@ -102,7 +139,8 @@ export function compareDays(sessions, dayA, dayB, selectedModule = "all") {
     const qa = numeric(a.total_question);
     const qb = numeric(b.total_question);
     // Dengan total soal yang diketahui dan berbeda, datanya tidak sebanding.
-    if ((qa != null || qb != null) && (qa == null || qb == null || qa !== qb)) {
+    if (a._hasMixedQuestions || b._hasMixedQuestions ||
+        ((qa != null || qb != null) && (qa == null || qb == null || qa !== qb))) {
       mismatchedQuestions++;
       continue;
     }
@@ -119,6 +157,7 @@ export function compareDays(sessions, dayA, dayB, selectedModule = "all") {
   const matchedLeft = aggregate(matching.map(x => x.left));
   const matchedRight = aggregate(matching.map(x => x.right));
   return {
+    method,
     leftDaily: aggregate(left.values()),
     rightDaily: aggregate(right.values()),
     matchedLeft,

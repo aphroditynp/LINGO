@@ -15,7 +15,7 @@ const dateLabel = key => {
 const fmt = value => value == null ? "—" : `${Number(value.toFixed(1)).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
 const fmtDelta = n => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}`;
 
-function DayCard({ side, date, value, onChange, summary }) {
+function DayCard({ side, date, value, onChange, summary, method }) {
   return (
     <div className="lingo-compare-day">
       <div className="lingo-compare-day-heading">
@@ -33,10 +33,10 @@ function DayCard({ side, date, value, onChange, summary }) {
       />
       <div className="lingo-compare-day-title">{dateLabel(date)}</div>
       <div className="lingo-compare-day-stat">
-        <div><strong>{fmt(summary.average)}</strong><span>Rata-rata akurasi harian</span></div>
-        <div><strong>{summary.count}</strong><span>Hasil modul</span></div>
+        <div><strong>{fmt(summary.average)}</strong><span>{method === "average" ? "Rata-rata semua sesi per modul" : "Rata-rata hasil terakhir per modul"}</span></div>
+        <div><strong>{summary.sessions}</strong><span>Sesi yang dihitung</span></div>
       </div>
-      <p className="lingo-compare-subtle">{summary.participants} peserta · {summary.modules} modul</p>
+      <p className="lingo-compare-subtle">{summary.participants} peserta · {summary.modules} modul · {summary.count} hasil peserta-modul</p>
     </div>
   );
 }
@@ -48,6 +48,7 @@ export default function DailyComparison({ sessions = [] }) {
   const [leftDate, setLeftDate] = useState("");
   const [rightDate, setRightDate] = useState("");
   const [module, setModule] = useState("all");
+  const [method, setMethod] = useState("average");
 
   // Pilih dua tanggal terakhir yang memiliki sesi, tanpa menimpa pilihan manual pengguna.
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function DailyComparison({ sessions = [] }) {
     setRightDate(current => current || last);
   }, [availableDates]);
 
-  const result = useMemo(() => compareDays(sessions, leftDate, rightDate, module), [sessions, leftDate, rightDate, module]);
+  const result = useMemo(() => compareDays(sessions, leftDate, rightDate, module, method), [sessions, leftDate, rightDate, module, method]);
   const sameDate = Boolean(leftDate && rightDate && leftDate === rightDate);
   const bothHaveData = result.leftDaily.count > 0 && result.rightDaily.count > 0;
   const hasMatches = !sameDate && result.matches.length > 0;
@@ -88,15 +89,32 @@ export default function DailyComparison({ sessions = [] }) {
         </label>
       </div>
 
+      <fieldset className="lingo-compare-method" aria-label="Metode perbandingan nilai">
+        <legend>Metode perbandingan</legend>
+        <div className="lingo-compare-method-options">
+          <label className={method === "latest" ? "is-active" : ""}>
+            <input type="radio" name="lingo-compare-method" value="latest" checked={method === "latest"} onChange={() => setMethod("latest")} />
+            Hasil bermain terakhir
+          </label>
+          <label className={method === "average" ? "is-active" : ""}>
+            <input type="radio" name="lingo-compare-method" value="average" checked={method === "average"} onChange={() => setMethod("average")} />
+            Rata-rata harian
+          </label>
+        </div>
+        <p>{method === "average"
+          ? "Menghitung seluruh sesi pada tiap tanggal. Setiap modul dirata-ratakan terlebih dahulu agar jumlah pengulangan tidak mengubah bobot antar-modul."
+          : "Mengambil hanya permainan terakhir untuk setiap peserta dan modul pada masing-masing tanggal."}</p>
+      </fieldset>
+
       <div className="lingo-compare-sides">
-        <DayCard side="left" date={leftDate} value={leftDate} onChange={setLeftDate} summary={result.leftDaily} />
-        <DayCard side="right" date={rightDate} value={rightDate} onChange={setRightDate} summary={result.rightDaily} />
+        <DayCard side="left" date={leftDate} value={leftDate} onChange={setLeftDate} summary={result.leftDaily} method={method} />
+        <DayCard side="right" date={rightDate} value={rightDate} onChange={setRightDate} summary={result.rightDaily} method={method} />
       </div>
       <div className="lingo-compare-actions">
         <button type="button" onClick={() => { setLeftDate(rightDate); setRightDate(leftDate); }} disabled={!leftDate || !rightDate}>
           ⇄ Tukar tanggal
         </button>
-        <span>Waktu data: WIB (Asia/Jakarta). Sesi berulang pada hari yang sama memakai hasil terbaru.</span>
+        <span>Waktu data: WIB (Asia/Jakarta). {method === "latest" ? "Sesi berulang memakai nilai terbaru." : "Seluruh sesi valid dihitung dalam rata-rata."}</span>
       </div>
       {demo && <p className="lingo-compare-warning">Beberapa sesi bertanda data simulasi. Jangan gunakan hasil ini sebagai bukti kemajuan anak yang sebenarnya.</p>}
 
@@ -106,25 +124,26 @@ export default function DailyComparison({ sessions = [] }) {
         <>
           <div className="lingo-compare-result">
             <div className="lingo-compare-result-main">
-              <span className="lingo-compare-eyebrow">PERUBAHAN SKOR SETARA</span>
+              <span className="lingo-compare-eyebrow">{method === "average" ? "PERUBAHAN RATA-RATA HARIAN" : "PERUBAHAN HASIL TERAKHIR"} · DATA SETARA</span>
               <strong className={`lingo-compare-delta ${trend}`}>{fmtDelta(result.delta)} poin</strong>
               <span className="lingo-compare-trend">{trend === "naik" ? "Nilai meningkat" : trend === "turun" ? "Nilai menurun" : "Nilai tetap"}</span>
             </div>
             <div className="lingo-compare-result-stats">
-              <div><span>Modul sebanding</span><strong>{result.matches.length}</strong></div>
+              <div><span>Pasangan peserta-modul</span><strong>{result.matches.length}</strong></div>
               <div><span>Nilai awal → akhir</span><strong>{fmt(result.matchedLeft.average)} → {fmt(result.matchedRight.average)}</strong></div>
-              <div><span>Jawaban benar</span><strong>{result.matchedLeft.correct} → {result.matchedRight.correct}</strong></div>
-              <div><span>Percobaan salah</span><strong>{result.matchedLeft.wrong} → {result.matchedRight.wrong}</strong></div>
+              <div><span>Sesi setara yang dihitung</span><strong>{result.matchedLeft.sessions} → {result.matchedRight.sessions}</strong></div>
+              <div><span>Jawaban benar{method === "average" ? " (seluruh sesi)" : " (sesi terakhir)"}</span><strong>{result.matchedLeft.correct} → {result.matchedRight.correct}</strong></div>
+              <div><span>Percobaan salah{method === "average" ? " (seluruh sesi)" : " (sesi terakhir)"}</span><strong>{result.matchedLeft.wrong} → {result.matchedRight.wrong}</strong></div>
             </div>
           </div>
 
           <div className="lingo-compare-breakdown">
             <h3>Perbandingan per modul</h3>
-            <p>Hanya modul yang dikerjakan oleh peserta yang sama pada kedua tanggal. Perubahan dihitung dalam poin persentase.</p>
+            <p>Hanya modul yang dikerjakan oleh peserta yang sama pada kedua tanggal. {method === "average" ? "Nilai merupakan rata-rata sesi harian." : "Nilai diambil dari sesi terakhir."} Perubahan dihitung dalam poin persentase.</p>
             {result.matches.map(item => (
               <div className="lingo-compare-module" key={item.key}>
                 <div className="lingo-compare-module-header">
-                  <div><strong>{item.label}</strong>{item.page != null && <span>Halaman {item.page}</span>}</div>
+                  <div><strong>{item.label}</strong>{item.page != null && <span>Halaman {item.page}</span>}{method === "average" && <span>{item.left._sessionsCount} sesi kiri · {item.right._sessionsCount} sesi kanan</span>}</div>
                   <span className={item.delta > 0 ? "up" : item.delta < 0 ? "down" : "flat"}>{fmtDelta(item.delta)} poin</span>
                 </div>
                 <div className="lingo-compare-bar-row"><span>Kiri</span><div className="lingo-compare-bar-track"><div className="lingo-compare-bar left" style={{width: `${item.left._accuracy}%`}} /></div><b>{fmt(item.left._accuracy)}</b></div>
@@ -137,7 +156,9 @@ export default function DailyComparison({ sessions = [] }) {
           )}
         </>
       )}
-      <p className="lingo-compare-footnote">Perkembangan dihitung dari rata-rata akurasi sesi terakhir untuk pasangan peserta dan modul yang sama; perbedaan dua kelompok murid tidak otomatis dianggap kemajuan belajar.</p>
+      <p className="lingo-compare-footnote">{method === "average"
+        ? "Mode rata-rata: rata-rata aritmetika seluruh akurasi sesi per peserta-modul per hari, lalu rata-rata antarpasangan setara (bobot sama)."
+        : "Mode terakhir: hanya akurasi sesi paling akhir untuk setiap peserta-modul pada masing-masing hari."} Perbedaan kelompok murid yang tidak sama tidak dianggap perkembangan belajar. Sesi yang belum dinilai diabaikan.</p>
     </section>
   );
 }

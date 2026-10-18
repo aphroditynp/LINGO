@@ -50,3 +50,14 @@
 .lingo-compare-footnote,.lingo-compare-warning {font-size:12px; line-height:1.6; color:#758398; margin:14px 0 0;}
 .lingo-compare-warning {color:#915c26; background:#fff9ed; border:1px solid #f0e4cf; border-radius:9px; padding:10px 13px;}
 @media (max-width:720px) {.lingo-compare {padding:17px;}.lingo-compare-header h2 {font-size:21px;}.lingo-compare-filter {width:100%;}.lingo-compare-filter select {width:100%;}.lingo-compare-sides {grid-template-columns:1fr;}.lingo-compare-result {grid-template-columns:1fr;}.lingo-compare-day-stat strong {font-size:24px;}}
+
+/* Pilih metode perbandingan: hasil terakhir atau rata-rata seluruh sesi */
+.lingo-compare-method {border:0; padding:0; min-width:0; margin:0 0 20px;}
+.lingo-compare-method legend {font-size:12px; font-weight:800; color:#64738a; padding:0; margin-bottom:9px;}
+.lingo-compare-method-options {display:flex; flex-wrap:wrap; gap:8px;}
+.lingo-compare-method-options label {display:inline-flex; align-items:center; gap:8px; border:1px solid #cdd8e9; color:#536780; background:#f8faff; border-radius:11px; padding:10px 14px; font-size:13px; font-weight:750; cursor:pointer; line-height:1.35;}
+.lingo-compare-method-options label.is-active {border-color:#79a1e3; background:#eaf2ff; color:#285a9b; box-shadow:inset 0 0 0 1px #bad1f3;}
+.lingo-compare-method-options input[type="radio"] {margin:0; width:15px; height:15px; flex:none; accent-color:#315fb1;}
+.lingo-compare-method-options label:focus-within {outline:3px solid #a4c4fa; outline-offset:2px;}
+.lingo-compare-method p {font-size:12px; line-height:1.6; margin:9px 0 0; color:#748399;}
+@media (max-width:540px) {.lingo-compare-method-options {display:grid; grid-template-columns:1fr;} .lingo-compare-method-options label {width:100%;}}
