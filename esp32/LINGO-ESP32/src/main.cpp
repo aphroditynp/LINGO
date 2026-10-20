@@ -63,6 +63,9 @@ const bool LINGO_INSECURE_HTTPS_TEST_ONLY = true;
 
 const unsigned long WIFI_CONNECT_TIMEOUT = 15000;
 const unsigned long WIFI_AUDIO_INTERVAL = 7000;
+// Jika WiFi yang sedang dipakai putus: reconnect selama 15 detik,
+// lalu buka kembali portal WiFi di hotspot LINGO_SETUP.
+const unsigned long WIFI_PORTAL_RETRY_INTERVAL = 10000;
 
 unsigned long lastWifiAudio = 0;
 
@@ -77,6 +80,8 @@ enum WiFiState {
 };
 
 WiFiState wifiState = WIFI_CONNECTING;
+unsigned long wifiReconnectStartedAt = 0;
+unsigned long wifiPortalLastAttemptAt = 0;
 
 // LINGO hanya memproses tombol permainan jika READY.
 bool lingoReady = false;
@@ -534,6 +539,7 @@ void handleWiFiState();
 bool hasSavedWiFi();
 bool connectSavedWiFi();
 void startFirstTimeWiFiSetup();
+void onWiFiConnected();
 void playTrack399();
 void playTrack400();
 bool micButtonPressed();
@@ -1281,23 +1287,15 @@ void checkPCF(uint16_t currentState, uint16_t &lastState, int offsetPin) {
 // =========================================================
 
 bool hasSavedWiFi() {
-
-  wifiPreferences.begin(
-    "lingo-wifi",
-    true
-  );
-
-  bool configured =
-    wifiPreferences.getBool(
-      "configured",
-      false
-    );
-
-  wifiPreferences.end();
-
-  return configured;
+  // Preferences lama tetap didukung. Cek kredensial WiFiManager juga,
+  // agar portal tidak muncul jika WiFi sudah tersimpan pada ESP32.
+  bool configured = false;
+  if (wifiPreferences.begin("lingo-wifi", true)) {
+    configured = wifiPreferences.getBool("configured", false);
+    wifiPreferences.end();
+  }
+  return configured || wm.getWiFiIsSaved();
 }
-
 
 void markWiFiConfigured() {
 
@@ -1395,146 +1393,93 @@ bool connectSavedWiFi() {
 }
 
 
+// Portal bisa dipakai saat pertama kali setup DAN ketika WiFi lama gagal.
+// startConfigPortal() dengan mode non-blocking normalnya mengembalikan false;
+// status sebenarnya diperiksa melalui getConfigPortalActive().
 void startFirstTimeWiFiSetup() {
-
-  Serial.println();
-  Serial.println(
-    "======================================"
-  );
-
-  Serial.println(
-    "       FIRST TIME WIFI SETUP"
-  );
-
-  Serial.println(
-    "======================================"
-  );
-
-  Serial.println(
-    "Hubungkan HP ke hotspot:"
-  );
-
-  Serial.println(
-    "LINGO_SETUP"
-  );
-
-  Serial.println(
-    "Track 399 akan diputar berulang."
-  );
-
-  wm.setConfigPortalBlocking(
-    false
-  );
-
-  wm.setConfigPortalTimeout(
-    0
-  );
-
-  bool result =
-    wm.startConfigPortal(
-      "LINGO_SETUP"
-    );
-
-  if (!result) {
-
-    Serial.println(
-      "Config portal gagal dimulai."
-    );
+  if (wm.getConfigPortalActive()) {
+    wifiState = WIFI_FIRST_SETUP;
+    lingoReady = false;
+    return;
   }
 
-  lastWifiAudio =
-    millis() -
-    WIFI_AUDIO_INTERVAL;
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("     KONFIGURASI WIFI LINGO");
+  Serial.println("======================================");
+  Serial.println("Hubungkan HP ke hotspot: LINGO_SETUP");
+  Serial.println("Buka http://192.168.4.1 jika portal tidak otomatis muncul.");
+  Serial.println("GPIO 41: pilih mode OFFLINE.");
+
+  wm.setConfigPortalBlocking(false);
+  wm.setConfigPortalTimeout(0);  // tidak mati otomatis
+  wifiPortalLastAttemptAt = millis();
+  wm.startConfigPortal("LINGO_SETUP");
+
+  if (wm.getConfigPortalActive()) {
+    wifiState = WIFI_FIRST_SETUP;
+    lingoReady = false;
+    lastWifiAudio = millis() - WIFI_AUDIO_INTERVAL;
+    Serial.printf("[WIFI] Portal aktif, IP=%s\n", WiFi.softAPIP().toString().c_str());
+  } else {
+    wifiState = WIFI_FAILED;
+    lingoReady = false;
+    lastWifiAudio = millis() - WIFI_AUDIO_INTERVAL;
+    Serial.println("[WIFI] Portal gagal aktif; akan dicoba ulang.");
+  }
 }
 
+// Dipanggil baik setelah WiFi lama kembali tersambung maupun setelah
+// pengguna berhasil menyimpan WiFi baru melalui portal.
+void onWiFiConnected() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (wm.getConfigPortalActive()) wm.stopConfigPortal();
+  markWiFiConfigured();
+  wifiState = WIFI_ONLINE;
+  lingoReady = true;
+  Serial.printf("[WIFI] ONLINE | SSID=%s | IP=%s\n",
+                WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+  // Queue sesi penilaian akan di-upload ulang oleh loop() saat online.
+}
 
 void startWiFiSystem() {
-
 #if !LINGO_WIFI_ENABLED
-  Serial.println(
-    "WiFi dinonaktifkan dari konfigurasi build."
-  );
-
+  Serial.println("WiFi dinonaktifkan dari konfigurasi build.");
   enterOfflineMode();
   return;
 #endif
 
-  if (
-    hasSavedWiFi()
-  ) {
-
-    Serial.println(
-      "WiFi tersimpan ditemukan."
-    );
-
-    wifiState =
-      WIFI_CONNECTING;
-
-    if (
-      connectSavedWiFi()
-    ) {
-
-      markWiFiConfigured();
-
-      wifiState =
-        WIFI_ONLINE;
-
-      lingoReady =
-        true;
-
+  // WiFi yang terhubung kembali otomatis tidak boleh memutus alur permainan.
+  WiFi.setAutoReconnect(true);
+  if (hasSavedWiFi()) {
+    Serial.println("[WIFI] WiFi tersimpan ada. Mencoba selama 15 detik...");
+    wifiState = WIFI_CONNECTING;
+    lingoReady = false;
+    if (connectSavedWiFi()) {
+      onWiFiConnected();
     } else {
-
-      wifiState =
-        WIFI_FAILED;
-
-      lingoReady =
-        false;
-
-      lastWifiAudio =
-        millis() -
-        WIFI_AUDIO_INTERVAL;
+      Serial.println("[WIFI] WiFi tersimpan tidak terhubung; buka LINGO_SETUP.");
+      startFirstTimeWiFiSetup();
     }
-
   } else {
-
-    wifiState =
-      WIFI_FIRST_SETUP;
-
-    lingoReady =
-      false;
-
+    Serial.println("[WIFI] Belum ada WiFi tersimpan; buka LINGO_SETUP.");
     startFirstTimeWiFiSetup();
   }
 }
 
-
 void enterOfflineMode() {
-
-  wifiState =
-    WIFI_OFFLINE;
-
-  lingoReady =
-    true;
-
+  // Portal tidak boleh tertinggal terbuka jika pengguna memilih offline.
+  if (wm.getConfigPortalActive()) wm.stopConfigPortal();
+  wifiState = WIFI_OFFLINE;
+  lingoReady = true;
   Serial.println();
-  Serial.println(
-    "======================================"
-  );
-  Serial.println(
-    "LINGO OFFLINE MODE"
-  );
-  Serial.println(
-    "Permainan berjalan tanpa koneksi WiFi."
-  );
-  Serial.println(
-    "======================================"
-  );
-
-  myDFPlayer.playMp3Folder(
-    0
-  );
+  Serial.println("======================================");
+  Serial.println("LINGO OFFLINE MODE");
+  Serial.println("Permainan berjalan tanpa koneksi WiFi.");
+  Serial.println("Sesi penilaian tertunda tetap tersimpan di NVS.");
+  Serial.println("======================================");
+  myDFPlayer.playMp3Folder(0);
 }
-
 
 void playTrack399() {
 
@@ -1602,159 +1547,73 @@ bool micButtonPressed() {
 
 
 void handleWiFiState() {
-
 #if !LINGO_WIFI_ENABLED
   return;
 #endif
 
-  switch (
-    wifiState
-  ) {
-
-    case WIFI_FIRST_SETUP:
-
-      wm.process();
-
+  switch (wifiState) {
+    case WIFI_FIRST_SETUP: {
+      // Webserver + DNS WiFiManager perlu dilayani terus pada mode non-blocking.
+      if (wm.getConfigPortalActive()) wm.process();
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("[WIFI] Konfigurasi berhasil, kembali online.");
+        onWiFiConnected();
+        break;
+      }
+      // Bila portal tidak aktif (mis. pengguna menutupnya), buka lagi.
+      if (!wm.getConfigPortalActive() &&
+          millis() - wifiPortalLastAttemptAt >= WIFI_PORTAL_RETRY_INTERVAL) {
+        startFirstTimeWiFiSetup();
+      }
       playTrack399();
-
-      // GPIO 41 dapat memilih mode offline tanpa harus menyelesaikan
-      // konfigurasi WiFi terlebih dahulu.
-      if (
-        micButtonPressed()
-      ) {
-        enterOfflineMode();
-        break;
-      }
-
-      if (
-        WiFi.status() ==
-        WL_CONNECTED
-      ) {
-
-        Serial.println();
-        Serial.println(
-          "WiFi pertama berhasil terhubung."
-        );
-
-        Serial.print(
-          "SSID: "
-        );
-
-        Serial.println(
-          WiFi.SSID()
-        );
-
-        Serial.print(
-          "IP: "
-        );
-
-        Serial.println(
-          WiFi.localIP()
-        );
-
-        markWiFiConfigured();
-
-        wifiState =
-          WIFI_ONLINE;
-
-        lingoReady =
-          true;
-
-        Serial.println(
-          "LINGO READY - ONLINE"
-        );
-
-        myDFPlayer.playMp3Folder(
-          0
-        );
-      }
-
+      if (micButtonPressed()) enterOfflineMode();
       break;
+    }
 
-
-    case WIFI_CONNECTING:
-
-      break;
-
-
-    case WIFI_ONLINE:
-
-      if (
-        WiFi.status() !=
-        WL_CONNECTED
-      ) {
-
-        Serial.println(
-          "WiFi terputus."
-        );
-
-        wifiState =
-          WIFI_FAILED;
-
-        lingoReady =
-          false;
-
-        lastWifiAudio =
-          millis() -
-          WIFI_AUDIO_INTERVAL;
+    case WIFI_CONNECTING: {
+      // Reconnect tanpa delay 15 detik di dalam loop sehingga UI tidak macet.
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("[WIFI] Reconnect berhasil.");
+        onWiFiConnected();
+      } else if (millis() - wifiReconnectStartedAt >= WIFI_CONNECT_TIMEOUT) {
+        Serial.println("[WIFI] Reconnect 15 detik gagal; buka LINGO_SETUP.");
+        startFirstTimeWiFiSetup();
       }
-
       break;
+    }
 
-
-    case WIFI_FAILED:
-
-      if (
-        WiFi.status() ==
-        WL_CONNECTED
-      ) {
-
-        Serial.println(
-          "WiFi kembali terhubung."
-        );
-
-        wifiState =
-          WIFI_ONLINE;
-
-        lingoReady =
-          true;
-
-        Serial.println(
-          "LINGO READY - ONLINE"
-        );
-
-        break;
+    case WIFI_ONLINE: {
+      if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[WIFI] Koneksi terputus. Coba sambungkan ulang 15 detik...");
+        wifiState = WIFI_CONNECTING;
+        lingoReady = false;
+        wifiReconnectStartedAt = millis();
+        WiFi.reconnect();
       }
-
-      playTrack400();
-
-      // GPIO 41 = pilihan OFFLINE
-      if (
-        micButtonPressed()
-      ) {
-
-        Serial.println();
-        Serial.println(
-          "======================================"
-        );
-
-        Serial.println(
-          "GPIO 41 -> OFFLINE MODE"
-        );
-
-        Serial.println(
-          "======================================"
-        );
-
-        enterOfflineMode();
-      }
-
       break;
-      // Mode offline dipilih secara eksplisit dan dipertahankan sampai
-      // perangkat reboot. Pengiriman sesi belum diaktifkan.
+    }
+
+    case WIFI_FAILED: {
+      // Fallback jika portal gagal dibuat; tidak hanya memutar track 400.
+      if (WiFi.status() == WL_CONNECTED) {
+        onWiFiConnected();
+      } else {
+        playTrack400();
+        if (micButtonPressed()) {
+          enterOfflineMode();
+        } else if (millis() - wifiPortalLastAttemptAt >= WIFI_PORTAL_RETRY_INTERVAL) {
+          Serial.println("[WIFI] Mencoba membuka ulang portal LINGO_SETUP...");
+          startFirstTimeWiFiSetup();
+        }
+      }
+      break;
+    }
+
+    case WIFI_OFFLINE:
+      // Offline dipilih pengguna: jangan nyalakan portal secara otomatis.
+      break;
   }
 }
-
 
 // =========================================================
 // SEND SESSION
@@ -2074,7 +1933,7 @@ void loop() {
   // 3. GPIO 41 MIC BUTTON
   // ========================================================
   //
-  // Ketika WIFI_FAILED:
+  // Ketika portal LINGO_SETUP aktif / WIFI_FAILED:
   //   GPIO 41 = pilih OFFLINE
   //
   // Ketika LINGO READY:
