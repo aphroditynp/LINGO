@@ -599,6 +599,17 @@ app.post(
             const accuracy = status === "pending_model"
                 ? null
                 : (total > 0 ? Math.round(100 * correct / total) : Number(data.accuracy || 0));
+            // Waktu main dari jam ESP32 (NTP). Dipakai bila wajar: tidak di masa depan
+            // dan tidak lebih dari 1 tahun lalu. Jika tidak ada, pakai waktu upload.
+            const uploadedAt = new Date();
+            let playedAt = uploadedAt;
+            if (typeof data.played_at === "string") {
+                const t = new Date(data.played_at);
+                const ageMs = uploadedAt - t;
+                if (!Number.isNaN(t.getTime()) && ageMs > -5 * 60 * 1000 && ageMs < 365 * 24 * 3600 * 1000) {
+                    playedAt = t;
+                }
+            }
             const sessionId = typeof data.session_id === "string" ? data.session_id : "";
             if (sessionId && !/^[A-Za-z0-9_-]{5,100}$/.test(sessionId)) {
                 return res.status(400).json({status:"error", message:"session_id tidak valid"});
@@ -616,7 +627,8 @@ app.post(
                 accuracy,
                 duration,
                 status,
-                date: new Date().toISOString()
+                date: playedAt.toISOString(),
+                uploaded_at: uploadedAt.toISOString()
             };
             if (sessionId) {
                 // Deterministic document ID: retry upload tidak membuat duplikasi.

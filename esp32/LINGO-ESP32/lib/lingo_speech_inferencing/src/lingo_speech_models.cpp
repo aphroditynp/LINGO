@@ -1,8 +1,5 @@
 #include "lingo_speech_inferencing.h"
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
-#include "model-parameters/model_variables_lula.h"
-#include "model-parameters/model_variables_bima.h"
-#include "model-parameters/model_variables_aku.h"
 #include <Arduino.h>
 #include "esp_heap_caps.h"
 #include <stdlib.h>
@@ -93,18 +90,14 @@ bool lingoRecognize(
     ei_impulse_result_t result = {0};
     EI_IMPULSE_ERROR error;
 
+    // Satu model gabungan (project 1141951): aku, bima, itu, lula, noise, unknown.
+    // Enum hanya menandai kata target; label dicocokkan oleh pemanggil.
     switch (model) {
         case LINGO_MODEL_ITU:
-            error = process_impulse(&impulse_handle_1141462_1, &signal, &result, false);
-            break;
         case LINGO_MODEL_AKU:
-            error = process_impulse(&impulse_handle_1141465_1, &signal, &result, false);
-            break;
         case LINGO_MODEL_BIMA:
-            error = process_impulse(&impulse_handle_1141466_1, &signal, &result, false);
-            break;
         case LINGO_MODEL_LULA:
-            error = process_impulse(&impulse_handle_1141467_1, &signal, &result, false);
+            error = process_impulse(&impulse_handle_1141951_1, &signal, &result, false);
             break;
         default:
             return false;
@@ -121,7 +114,7 @@ bool lingoRecognize(
     }
 
     size_t bestIndex = 0;
-    for (size_t i = 1; i < 3; i++) {
+    for (size_t i = 1; i < EI_CLASSIFIER_LABEL_COUNT; i++) {
         if (result.classification[i].value > result.classification[bestIndex].value) {
             bestIndex = i;
         }
