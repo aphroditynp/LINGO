@@ -67,6 +67,7 @@ const char *LINGO_DEVICE_ID = LINGO_DEVICE_ID_STR;
 const bool LINGO_INSECURE_HTTPS_TEST_ONLY = true;
 // Password upload firmware lewat WiFi (OTA). Samakan dengan --auth di platformio.ini.
 const char *LINGO_OTA_PASSWORD = "lingo-ota-2026";
+const unsigned long OTA_CUE_INTERVAL_MS = 1500; // jeda antar-ulangan track 172 saat OTA
 
 // Mode hemat daya: tidur setelah 10 menit tanpa tombol ditekan,
 // bangun lagi dengan tombol MIC (GPIO 41).
@@ -78,14 +79,16 @@ unsigned long lastActivityMs = 0;
 #define TRACK_WIFI_SETUP 399
 #define TRACK_WIFI_FAILED 400
 #define TRACK_WIFI_TERHUBUNG 401
+#define TRACK_MODE_OFFLINE 402
 
 const unsigned long DURASI_AUDIO_LINGO_HIDUP_MS = 3000; // sesuaikan dengan durasi 0200.mp3
 
 const unsigned long WIFI_CONNECT_TIMEOUT = 15000;
 const unsigned long WIFI_AUDIO_INTERVAL = 7000;
-// Jika WiFi yang sedang dipakai putus: reconnect selama 15 detik,
-// lalu buka kembali portal WiFi di hotspot LINGO_SETUP.
 const unsigned long WIFI_PORTAL_RETRY_INTERVAL = 10000;
+// Jika WiFi putus saat LINGO dipakai: permainan tetap jalan,
+// sambung ulang diam-diam di latar belakang setiap 30 detik.
+const unsigned long WIFI_RECONNECT_LATAR_INTERVAL = 30000;
 
 unsigned long lastWifiAudio = 0;
 
@@ -96,7 +99,8 @@ enum WiFiState {
   WIFI_CONNECTING,
   WIFI_ONLINE,
   WIFI_FAILED,
-  WIFI_OFFLINE
+  WIFI_OFFLINE,
+  WIFI_RECONNECT_LATAR
 };
 
 WiFiState wifiState = WIFI_CONNECTING;
@@ -298,6 +302,10 @@ const int AUDIO_MIC_BUKAN_HALAMAN = 204;   // MIC ditekan di luar Tantangan Bica
 const int AUDIO_SEDANG_MEMPROSES = 205;    // pemrosesan suara lebih lama dari cue 172
 const int AUDIO_KATA_BELUM_DINILAI = 206;  // kata belum punya model
 const int AUDIO_MIC_BERMASALAH = 207;      // mikrofon / Edge Impulse gagal dinyalakan
+const int AUDIO_MIC_TERLALU_SINGKAT = 209; // MIC dilepas saat cue 171 / rekaman < 150 ms
+const int AUDIO_HALAMAN_SELESAI = 210;     // semua tugas halaman benar
+const unsigned long DURASI_AUDIO_BENAR_MS = 2700;    // 0030.mp3 = 2,51 s
+const unsigned long DURASI_AUDIO_GABUNGAN_MS = 1200; // 0049-0055.mp3 <= 0,94 s
 const int AUDIO_MODE_ISTIRAHAT = 208;      // masuk mode hemat daya
 
 // =========================================================
@@ -573,13 +581,25 @@ void completePageScore() {
   pageProgress = PageProgress{};
 }
 
-void maybeFinishCompletedPage() {
-  if (pageProgress.pageDef < 0) return;
+// Track 210 diputar non-blocking oleh loop() setelah audio "benar" terakhir.
+// 0 = tidak ada jadwal; dibatalkan bila anak menekan tombol lain lebih dulu.
+unsigned long audioHalamanSelesaiPada = 0;
+
+void jadwalkanAudioHalamanSelesai(unsigned long jedaMs) {
+  audioHalamanSelesaiPada = millis() + jedaMs;
+  if (audioHalamanSelesaiPada == 0) audioHalamanSelesaiPada = 1;
+}
+
+// true bila halaman baru saja selesai dengan semua tugas benar.
+bool maybeFinishCompletedPage() {
+  if (pageProgress.pageDef < 0) return false;
   const LingoPageDefinition &d = PAGE_DEFS[pageProgress.pageDef];
   if (d.modelAvailable && numberCorrect(pageProgress) == d.tasks) {
     Serial.println("[SKOR] Seluruh tugas halaman benar; simpan sesi sekarang.");
     completePageScore();
+    return true;
   }
+  return false;
 }
 
 // Halaman tanpa model sama sekali tetap dicatat sebagai aktivitas (pending_model).
@@ -680,7 +700,7 @@ void handleWiFiState();
 bool hasSavedWiFi();
 bool connectSavedWiFi();
 void startFirstTimeWiFiSetup();
-void onWiFiConnected();
+void onWiFiConnected(bool diamDiam = false);
 void playTrack399();
 void playTrack400();
 bool micButtonPressed();
@@ -835,14 +855,19 @@ void waitMicOffCueDone(uint32_t cueStartedAt) {
   myDFPlayer.stop();
 }
 
+// true bila percobaan terakhir gagal karena tombol MIC dilepas terlalu cepat.
+bool rekamanTerlaluSingkat = false;
+
 bool recordAudioWhileHeld() {
   recordedAudioSamples = 0;
+  rekamanTerlaluSingkat = false;
   if (audioBuffer == nullptr || recordingBuffer == nullptr) {
     Serial.println("[MIC] Buffer audio belum dialokasikan.");
     return false;
   }
   if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
     Serial.println("[MIC] Tombol sudah dilepas sebelum perekaman mulai.");
+    rekamanTerlaluSingkat = true;
     return false;
   }
 
@@ -903,6 +928,7 @@ bool recordAudioWhileHeld() {
     Serial.printf("[MIC] Terlalu singkat: %u sampel (minimum %u).\n",
                   (unsigned)recordedAudioSamples,
                   (unsigned)MIC_MIN_VALID_SAMPLES);
+    rekamanTerlaluSingkat = true;
     return false;
   }
 
@@ -1149,6 +1175,7 @@ bool ujiUcapan(
 void handleMicButtonPress() {
 
   lastActivityMs = millis();
+  audioHalamanSelesaiPada = 0;
   Serial.println();
   Serial.println("MIC BUTTON GPIO 41 ditekan.");
 
@@ -1198,7 +1225,8 @@ void handleMicButtonPress() {
   // Tunggu track selesai dahulu: rekaman setelah cue, tanpa kontaminasi speaker.
   playMicReadyCue();
   if (digitalRead(MIC_BUTTON_PIN) != HIGH) {
-    Serial.println("[MIC] GPIO 41 dilepas saat cue 171. Tidak merekam / tidak mengurangi percobaan.");
+    Serial.println("[MIC] GPIO 41 dilepas saat cue 171. Track 209, percobaan tidak dihitung.");
+    myDFPlayer.playMp3Folder(AUDIO_MIC_TERLALU_SINGKAT);
     return;
   }
 
@@ -1219,6 +1247,11 @@ void handleMicButtonPress() {
     &hanyaNoise
   );
   if (!percobaanDiproses) {
+    if (rekamanTerlaluSingkat) {
+      Serial.println("[MIC] Tombol dilepas terlalu cepat. Track 209.");
+      myDFPlayer.playMp3Folder(AUDIO_MIC_TERLALU_SINGKAT);
+      return;
+    }
     Serial.println("Percobaan tidak dihitung (rekaman terlalu singkat atau inferensi gagal).");
     Serial.println("Tekan kembali GPIO 41 untuk mendengar cue MIC MULAI dan mencoba lagi.");
     return;
@@ -1231,7 +1264,7 @@ void handleMicButtonPress() {
   }
   jumlahPercobaanBicara[i]++;
   notePageAnswer(i, benar);
-  maybeFinishCompletedPage();
+  const bool halamanSelesai = maybeFinishCompletedPage();
 
   if (benar) {
 
@@ -1242,6 +1275,7 @@ void handleMicButtonPress() {
     myDFPlayer.playMp3Folder(
       AUDIO_BENAR
     );
+    if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_BENAR_MS);
 
     // Jangan nolkan jumlah percobaan. Kunci kata ini sampai reset.
     kataSudahBenar[i] = true;
@@ -1282,6 +1316,7 @@ void handleMicButtonPress() {
 // =========================================================
 void handleButtonPress(int pinGlobal) {
   lastActivityMs = millis();
+  audioHalamanSelesaiPada = 0;
   bool isGoButton = false;
   
   // 1. Cek tombol GO
@@ -1414,12 +1449,14 @@ void handleButtonPress(int pinGlobal) {
 
           if (pinGlobal == daftarSoal[soalAktif].pinTombolJawaban) {
             notePageAnswer(soalAktif, true);
-            maybeFinishCompletedPage();
+            const bool halamanSelesai = maybeFinishCompletedPage();
             Serial.println("Pasangan BENAR!");
             if (daftarSoal[soalAktif].trackAudioGabungan != 0) {
               myDFPlayer.playMp3Folder(daftarSoal[soalAktif].trackAudioGabungan);
+              if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_GABUNGAN_MS);
             } else {
               myDFPlayer.playMp3Folder(AUDIO_BENAR);
+              if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_BENAR_MS);
             }
             soalAktif = -1; // Reset memori
           } else {
@@ -1716,15 +1753,29 @@ void mulaiOTA() {
   hostname.toLowerCase();
   ArduinoOTA.setHostname(hostname.c_str());
   ArduinoOTA.setPassword(LINGO_OTA_PASSWORD);
+  // Track 172 diulang selama upload sebagai tanda LINGO sedang diperbarui.
+  static unsigned long otaCueTerakhir = 0;
   ArduinoOTA.onStart([]() {
     Serial.println("[OTA] Mulai update firmware...");
     completePageScore(); // simpan sesi berjalan ke NVS sebelum restart
+    myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
+    otaCueTerakhir = millis();
   });
-  ArduinoOTA.onEnd([]() { Serial.println("\n[OTA] Selesai, restart."); });
+  ArduinoOTA.onEnd([]() {
+    // Track 171 sebagai tanda update berhasil; tunggu selesai sebelum restart.
+    myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
+    delay(DURASI_CUE_MIC_MULAI_MS);
+    Serial.println("\n[OTA] Selesai, restart.");
+  });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("[OTA] %u%%\r", total ? (progress * 100U / total) : 0U);
+    if (millis() - otaCueTerakhir >= OTA_CUE_INTERVAL_MS) {
+      myDFPlayer.playMp3Folder(AUDIO_MIC_MATI);
+      otaCueTerakhir = millis();
+    }
   });
   ArduinoOTA.onError([](ota_error_t error) {
+    myDFPlayer.stop();
     Serial.printf("[OTA] Gagal, kode=%u\n", (unsigned)error);
   });
   ArduinoOTA.begin();
@@ -1735,7 +1786,7 @@ void mulaiOTA() {
 
 // Dipanggil baik setelah WiFi lama kembali tersambung maupun setelah
 // pengguna berhasil menyimpan WiFi baru melalui portal.
-void onWiFiConnected() {
+void onWiFiConnected(bool diamDiam) {
   if (WiFi.status() != WL_CONNECTED) return;
   if (wm.getConfigPortalActive()) wm.stopConfigPortal();
   markWiFiConfigured();
@@ -1744,7 +1795,8 @@ void onWiFiConnected() {
   lingoReady = true;
   Serial.printf("[WIFI] ONLINE | SSID=%s | IP=%s\n",
                 WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-  myDFPlayer.playMp3Folder(TRACK_WIFI_TERHUBUNG);
+  // Reconnect latar tidak boleh memotong audio permainan anak.
+  if (!diamDiam) myDFPlayer.playMp3Folder(TRACK_WIFI_TERHUBUNG);
 
   // Sinkron jam (WIB) untuk stempel waktu sesi; berjalan di latar belakang.
   configTzTime("WIB-7", "pool.ntp.org", "time.google.com");
@@ -1788,7 +1840,7 @@ void enterOfflineMode() {
   Serial.println("Permainan berjalan tanpa koneksi WiFi.");
   Serial.println("Sesi penilaian tertunda tetap tersimpan di NVS.");
   Serial.println("======================================");
-  myDFPlayer.playMp3Folder(0);
+  myDFPlayer.playMp3Folder(TRACK_MODE_OFFLINE);
 }
 
 void playTrack399() {
@@ -1900,9 +1952,20 @@ void handleWiFiState() {
 
     case WIFI_ONLINE: {
       if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("[WIFI] Koneksi terputus. Coba sambungkan ulang 15 detik...");
-        wifiState = WIFI_CONNECTING;
-        lingoReady = false;
+        // Tombol tetap aktif; skor tersimpan di queue NVS sampai online lagi.
+        Serial.println("[WIFI] Koneksi terputus. Permainan lanjut, sambung ulang di latar...");
+        wifiState = WIFI_RECONNECT_LATAR;
+        wifiReconnectStartedAt = millis();
+        WiFi.reconnect();
+      }
+      break;
+    }
+
+    case WIFI_RECONNECT_LATAR: {
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("[WIFI] Tersambung kembali (latar).");
+        onWiFiConnected(true);
+      } else if (millis() - wifiReconnectStartedAt >= WIFI_RECONNECT_LATAR_INTERVAL) {
         wifiReconnectStartedAt = millis();
         WiFi.reconnect();
       }
@@ -2178,6 +2241,13 @@ void loop() {
 
   if (WiFi.status() == WL_CONNECTED) ArduinoOTA.handle();
 
+  if (audioHalamanSelesaiPada != 0 &&
+      (long)(millis() - audioHalamanSelesaiPada) >= 0) {
+    audioHalamanSelesaiPada = 0;
+    Serial.println("[SKOR] Halaman selesai. Track 210.");
+    myDFPlayer.playMp3Folder(AUDIO_HALAMAN_SELESAI);
+  }
+
   if (lingoReady && millis() - lastActivityMs >= BATAS_DIAM_SEBELUM_TIDUR_MS) {
     masukModeHemat();
     return;
@@ -2258,6 +2328,10 @@ void loop() {
 
         case WIFI_OFFLINE:
           Serial.println("OFFLINE");
+          break;
+
+        case WIFI_RECONNECT_LATAR:
+          Serial.println("RECONNECT (latar, tetap bisa main)");
           break;
       }
 
