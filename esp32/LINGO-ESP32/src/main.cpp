@@ -137,7 +137,9 @@ const size_t LINGO_SPEECH_SAMPLE_COUNT = 16000; // 1 detik per inferensi
 const int LINGO_SPEECH_SAMPLE_RATE = 16000;
 const int AUDIO_MIC_MULAI = 171;
 const int AUDIO_MIC_MATI  = 172;
-const unsigned long DURASI_CUE_MIC_MS = 1200;
+// Durasi cue = panjang MP3 (sudah dipotong heningnya) + jeda mulai DFPlayer ~0,15 s.
+const unsigned long DURASI_CUE_MIC_MULAI_MS = 700; // 0171.mp3 = 0,55 s
+const unsigned long DURASI_CUE_MIC_MATI_MS = 900;  // 0172.mp3 = 0,76 s
 const size_t MIC_MIN_VALID_SAMPLES = 2400; // 150 ms, hindari klik tombol
 const size_t MIC_MAX_RECORD_SAMPLES = 5 * LINGO_SPEECH_SAMPLE_COUNT; // 5 detik
 // Geser parameter ini jika ingin mengubah waktu mulai analisis audio.
@@ -808,7 +810,7 @@ void playMicReadyCue() {
   myDFPlayer.stop();
   delay(60);
   myDFPlayer.playMp3Folder(AUDIO_MIC_MULAI);
-  delay(DURASI_CUE_MIC_MS);
+  delay(DURASI_CUE_MIC_MULAI_MS);
   myDFPlayer.stop();
   Serial.println("[MIC] Cue selesai. Mulai bicara sambil tetap menahan GPIO 41, lalu LEPAS.");
 }
@@ -829,7 +831,7 @@ uint32_t playMicOffCue() {
 // Tunggu sisa durasi cue agar audio BENAR/SALAH tidak memotong track 172.
 void waitMicOffCueDone(uint32_t cueStartedAt) {
   const uint32_t elapsed = millis() - cueStartedAt;
-  if (elapsed < DURASI_CUE_MIC_MS) delay(DURASI_CUE_MIC_MS - elapsed);
+  if (elapsed < DURASI_CUE_MIC_MATI_MS) delay(DURASI_CUE_MIC_MATI_MS - elapsed);
   myDFPlayer.stop();
 }
 
@@ -1021,7 +1023,7 @@ bool recognizeAcrossRecording(
     // Jika proses masih berjalan setelah cue 172 selesai, beri tahu anak
     // bahwa LINGO sedang mendengarkan agar tidak dikira macet.
     if (!cueProsesDiputar && windowsChecked > 0 &&
-        millis() - micOffCueStartedAt >= DURASI_CUE_MIC_MS) {
+        millis() - micOffCueStartedAt >= DURASI_CUE_MIC_MATI_MS) {
       Serial.println("[EI] Proses lebih lama dari cue. Track 205.");
       myDFPlayer.playMp3Folder(AUDIO_SEDANG_MEMPROSES);
       cueProsesDiputar = true;
