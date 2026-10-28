@@ -6,6 +6,7 @@ import {
 
 
 import Navbar from "./components/Navbar";
+import ProfileStatusGuard from "./components/ProfileStatusGuard";
 
 
 import Dashboard from "./pages/Dashboard";
@@ -32,6 +33,9 @@ function App() {
 
 
             <Navbar />
+
+
+            <ProfileStatusGuard />
 
 
             <Routes>

@@ -8,6 +8,7 @@ function RegisterDevice() {
     const navigate = useNavigate();
     const code = searchParams.get("code") || "";
     const profileDeleted = searchParams.get("deleted") === "1";
+    const profileReset = searchParams.get("reset") === "1";
 
     const [name, setName] = useState("");
     const [age, setAge] = useState("");
@@ -86,6 +87,11 @@ function RegisterDevice() {
                     <p className="profile-message" role="status">
                         Profil berhasil dihapus. Scan QR pada LINGO untuk
                         mendaftarkan profil anak yang baru.
+                    </p>
+                ) : !code && profileReset ? (
+                    <p className="profile-message" role="status">
+                        LINGO ini sudah di-reset oleh admin. Scan QR pada LINGO
+                        lalu isi lagi nama dan umur anak.
                     </p>
                 ) : !code ? (
                     <div className="device-register-error" role="alert">
