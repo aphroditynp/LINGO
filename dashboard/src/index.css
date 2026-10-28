@@ -2773,3 +2773,18 @@ tr:hover td {
 
 }
 
+
+.profile-form-card button.share-revoke-button {
+    margin-top: 12px;
+
+    background: white;
+
+    border: 1px solid #F5B5B5;
+
+    color: #B42318;
+}
+
+.profile-form-card button.share-revoke-button:hover {
+    background: #FEECEC;
+}
+

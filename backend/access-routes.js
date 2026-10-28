@@ -65,6 +65,22 @@ function attachAccessRoutes({ app, db, FRONTEND_URL }) {
     }
   });
 
+  // Cabut semua link bagikan milik profil ini (QR pada LINGO tetap berlaku).
+  app.post("/api/access/revoke", async (req, res) => {
+    const userId = req.body.user_id;
+    try {
+      if (!await userExists(userId)) {
+        return res.status(404).json({ error: "Profil anak tidak ditemukan." });
+      }
+      const links = (await accessLinks.where("user_id", "==", userId).get()).docs;
+      for (const doc of links) await accessLinks.doc(doc.id).delete();
+      return res.json({ status: "success", revoked: links.length });
+    } catch (error) {
+      console.error("ACCESS REVOKE ERROR:", error);
+      return res.status(500).json({ error: "Gagal mencabut link. Silakan coba lagi." });
+    }
+  });
+
   app.post("/api/access/redeem", async (req, res) => {
     const token = typeof req.body.token === "string" ? req.body.token.trim() : "";
     if (!SHARE_TOKEN_PATTERN.test(token)) {

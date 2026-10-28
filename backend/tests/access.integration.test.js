@@ -20,7 +20,11 @@ const db = { collection(name) {
   return { doc: (id) => ({
     async get() { return { id, exists: data.has(id), data: () => data.get(id) }; },
     async create(value) { if (data.has(id)) throw new Error("already exists"); data.set(id, value); },
-  }) };
+    async delete() { data.delete(id); },
+  }),
+  where(field, op, value) { return { async get() { return { docs: [...data.keys()]
+    .filter((id) => data.get(id)[field] === value)
+    .map((id) => ({ id, exists: true, data: () => data.get(id) })) }; } }; } };
 } };
 
 async function run() {
@@ -49,6 +53,15 @@ async function run() {
     a = await hit("/access/redeem", { token }); assert.equal(a.status, 200); assert.equal(a.data.user_id, "childA");
     a = await hit("/access/redeem", { token: "x".repeat(32) }); assert.equal(a.status, 404);
     a = await hit("/access/redeem", { token: "pendek" }); assert.equal(a.status, 400);
+    // Cabut semua link: link lama tidak bisa dibuka lagi, QR tetap bisa.
+    a = await hit("/access/share", { user_id: "childA" });
+    const token2 = new URL(a.data.url).searchParams.get("token");
+    a = await hit("/access/revoke", { user_id: "childA" });
+    assert.equal(a.status, 200); assert.equal(a.data.revoked, 2);
+    a = await hit("/access/redeem", { token }); assert.equal(a.status, 404);
+    a = await hit("/access/redeem", { token: token2 }); assert.equal(a.status, 404);
+    a = await hit("/devices/access", { code: claimedCode }); assert.equal(a.data.status, "claimed");
+    a = await hit("/access/revoke", { user_id: "tidakAda" }); assert.equal(a.status, 404);
     console.log("access integration test: OK");
   } finally { srv.close(); }
 }

@@ -187,6 +187,65 @@ function Profile() {
 
 
 
+    const handleRevokeLinks = async () => {
+
+        const confirmed =
+            window.confirm(
+                "Cabut semua link akses?\n\n" +
+                "Link yang pernah dibagikan tidak bisa dibuka lagi. " +
+                "HP/laptop yang sudah membuka dashboard tetap bisa " +
+                "melihatnya, dan scan QR pada LINGO tetap berlaku."
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        setSharing(true);
+
+        setShareMessage("");
+
+
+        try {
+
+            const response =
+                await API.post(
+                    "/access/revoke",
+                    {
+                        user_id: getCurrentUserId()
+                    }
+                );
+
+
+            setShareUrl("");
+
+            setShareMessage(
+                `${response.data.revoked} link berhasil dicabut.`
+            );
+
+        } catch (error) {
+
+            console.log(error);
+
+            setShareMessage(
+                error.response?.data?.error ||
+                "Link gagal dicabut."
+            );
+
+        } finally {
+
+            setSharing(false);
+
+        }
+
+    };
+
+
+
     const handleCopyShareLink = async () => {
 
         try {
@@ -557,6 +616,18 @@ function Profile() {
                     </button>
 
                 )}
+
+
+                <button
+                    type="button"
+                    className="share-revoke-button"
+                    onClick={
+                        handleRevokeLinks
+                    }
+                    disabled={sharing}
+                >
+                    Cabut Semua Link Akses
+                </button>
 
 
                 {shareMessage && (
