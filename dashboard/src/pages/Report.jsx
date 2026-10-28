@@ -377,6 +377,10 @@ function Report({
     let recommendation =
         "Belum ada cukup data untuk memberikan rekomendasi.";
 
+    // Warna kotak: merah bila ada modul yang perlu dilatih.
+    let recommendationTone =
+        "no-data";
+
 
 
     if (
@@ -392,11 +396,17 @@ function Report({
             recommendation =
                 `Perkembangan ${user.name} terlihat baik. Pertahankan latihan secara rutin agar kemampuan tetap konsisten.`;
 
+            recommendationTone =
+                "good";
+
         } else {
 
 
             recommendation =
                 `Latihan dapat lebih difokuskan pada modul ${weakestModule.name} yang saat ini memiliki rata-rata nilai ${weakestModule.average}%.`;
+
+            recommendationTone =
+                "needs-focus";
 
         }
 
@@ -506,6 +516,55 @@ function Report({
                     {activeUserId}
 
                 </div>
+
+            </div>
+
+
+
+            {/* =================================================
+                RECOMMENDATION
+            ================================================= */}
+
+            <div
+                className={
+                    `report-recommendation ${recommendationTone}`
+                }
+                role={
+                    recommendationTone === "needs-focus"
+                        ? "alert"
+                        : undefined
+                }
+            >
+
+
+                <div
+                    className="recommendation-icon"
+                >
+
+                    {recommendationTone === "needs-focus"
+                        ? "!"
+                        : "★"
+                    }
+
+                </div>
+
+
+
+                <div>
+
+                    <span>
+                        Rekomendasi LINGO
+                    </span>
+
+
+                    <p>
+
+                        {recommendation}
+
+                    </p>
+
+                </div>
+
 
             </div>
 
@@ -809,45 +868,6 @@ function Report({
                         }
 
                     </strong>
-
-                </div>
-
-
-            </div>
-
-
-
-            {/* =================================================
-                RECOMMENDATION
-            ================================================= */}
-
-            <div
-                className="report-recommendation"
-            >
-
-
-                <div
-                    className="recommendation-icon"
-                >
-
-                    ★
-
-                </div>
-
-
-
-                <div>
-
-                    <span>
-                        Rekomendasi LINGO
-                    </span>
-
-
-                    <p>
-
-                        {recommendation}
-
-                    </p>
 
                 </div>
 

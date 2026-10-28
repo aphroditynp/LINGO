@@ -41,6 +41,11 @@ function AdminDashboard() {
         useState(null);
 
 
+    // Status tombol "Salin Link Akses" per user: "loading" | "copied" | "error".
+    const [linkStatus, setLinkStatus] =
+        useState({});
+
+
     const token =
         localStorage.getItem(
             "lingoAdminToken"
@@ -287,6 +292,95 @@ function AdminDashboard() {
             );
 
         };
+
+
+    // =====================================================
+    // SALIN LINK AKSES ORANG TUA
+    // =====================================================
+
+    const handleCopyAccessLink =
+        async (userId) => {
+
+            setLinkStatus(
+                (current) => ({
+                    ...current,
+                    [userId]: "loading"
+                })
+            );
+
+
+            let url = "";
+
+            try {
+
+                const response =
+                    await API.post(
+                        "/access/share",
+                        {
+                            user_id: userId
+                        }
+                    );
+
+                url =
+                    response.data.url;
+
+                await navigator.clipboard.writeText(
+                    url
+                );
+
+                setLinkStatus(
+                    (current) => ({
+                        ...current,
+                        [userId]: "copied"
+                    })
+                );
+
+            } catch (error) {
+
+                console.log(error);
+
+                if (url) {
+
+                    // Clipboard ditolak browser: tampilkan untuk disalin manual.
+                    window.prompt(
+                        "Salin link akses ini:",
+                        url
+                    );
+
+                    setLinkStatus(
+                        (current) => ({
+                            ...current,
+                            [userId]: undefined
+                        })
+                    );
+
+                    return;
+
+                }
+
+                setLinkStatus(
+                    (current) => ({
+                        ...current,
+                        [userId]: "error"
+                    })
+                );
+
+            }
+
+
+            setTimeout(
+                () =>
+                    setLinkStatus(
+                        (current) => ({
+                            ...current,
+                            [userId]: undefined
+                        })
+                    ),
+                2500
+            );
+
+        };
+
 
 
     // =====================================================
@@ -765,9 +859,40 @@ function AdminDashboard() {
                                                         user.id
                                                     )
                                                 }
+                                                style={{
+                                                    marginRight:
+                                                        "8px"
+                                                }}
                                             >
 
                                                 Lihat Dashboard
+
+                                            </button>
+
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleCopyAccessLink(
+                                                        user.id
+                                                    )
+                                                }
+                                                disabled={
+                                                    linkStatus[user.id] ===
+                                                    "loading"
+                                                }
+                                            >
+
+                                                {{
+                                                    loading:
+                                                        "Membuat link...",
+                                                    copied:
+                                                        "Link disalin!",
+                                                    error:
+                                                        "Gagal, coba lagi"
+                                                }[linkStatus[user.id]] ||
+                                                    "Salin Link Akses"
+                                                }
 
                                             </button>
 
