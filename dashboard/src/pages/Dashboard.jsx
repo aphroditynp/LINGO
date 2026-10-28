@@ -22,7 +22,10 @@ import DailyComparison from "../components/DailyComparison";
 import API
 from "../api";
 
-import { getCurrentUserId } from "../user";
+import {
+    getCurrentUserId,
+    isUsingDemoProfile
+} from "../user";
 
 
 
@@ -497,6 +500,21 @@ function Dashboard({
         <div
             className="container dashboard-page"
         >
+
+
+            {isUsingDemoProfile(userIdOverride) && (
+
+                <div
+                    className="demo-profile-banner"
+                    role="status"
+                >
+                    Ini <strong>data contoh</strong>.
+                    Scan QR pada LINGO atau buka link
+                    akses dari keluarga untuk melihat
+                    perkembangan anakmu.
+                </div>
+
+            )}
 
 
             {/* =================================================

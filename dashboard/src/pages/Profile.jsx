@@ -8,7 +8,8 @@ import { useNavigate } from "react-router-dom";
 import API from "../api";
 import {
     clearCurrentUserId,
-    getCurrentUserId
+    getCurrentUserId,
+    isUsingDemoProfile
 } from "../user";
 
 
@@ -282,6 +283,21 @@ function Profile() {
         <div className="container profile-page">
 
 
+            {isUsingDemoProfile() && (
+
+                <div
+                    className="demo-profile-banner"
+                    role="status"
+                >
+                    Ini <strong>data contoh</strong>.
+                    Scan QR pada LINGO atau buka link
+                    akses dari keluarga untuk melihat
+                    perkembangan anakmu.
+                </div>
+
+            )}
+
+
             {profile?.active === false && (
 
                 <div
@@ -453,6 +469,11 @@ function Profile() {
             </div>
 
 
+
+            {/* Profil contoh (belum scan QR) tidak boleh dibagikan atau dihapus. */}
+            {!isUsingDemoProfile() && (
+
+            <>
 
             {/* SHARE CARD */}
 
@@ -631,6 +652,10 @@ function Profile() {
                 </form>
 
             </div>
+
+            </>
+
+            )}
 
 
         </div>

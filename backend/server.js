@@ -639,6 +639,10 @@ app.post(
                 await db.collection("sessions").add(session);
             }
             console.log("SESSION PAGE:", deviceId, session.module, session.accuracy);
+            // Ditampilkan di admin sebagai "Terakhir kirim data".
+            await db.collection("devices").doc(deviceId).update({
+                last_seen_at: uploadedAt.toISOString()
+            });
 
             res.status(200)
                 .json({

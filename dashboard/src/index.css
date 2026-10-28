@@ -2712,3 +2712,64 @@ tr:hover td {
 
     font-weight: 600;
 }
+
+
+/* =====================================================
+   DATA CONTOH & CETAK LAPORAN
+===================================================== */
+
+.demo-profile-banner {
+    margin-bottom: 22px;
+
+    padding: 14px 18px;
+
+    border: 1px solid #F5D9A8;
+
+    border-radius: 14px;
+
+    background: #FFF6E5;
+
+    color: #8A5300;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+.report-header-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
+}
+
+@media print {
+
+    .navbar,
+    .demo-profile-banner,
+    .report-print-button,
+    .refresh-button {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+    }
+
+    .report-page {
+        padding: 0;
+    }
+
+    .report-recommendation,
+    .table-card,
+    .report-highlight {
+        break-inside: avoid;
+    }
+
+}
+

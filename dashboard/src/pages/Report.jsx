@@ -5,7 +5,10 @@ import {
 
 
 import API from "../api";
-import { getCurrentUserId } from "../user";
+import {
+    getCurrentUserId,
+    isUsingDemoProfile
+} from "../user";
 
 
 
@@ -472,6 +475,21 @@ function Report({
         >
 
 
+            {isUsingDemoProfile(userIdOverride) && (
+
+                <div
+                    className="demo-profile-banner"
+                    role="status"
+                >
+                    Ini <strong>data contoh</strong>.
+                    Scan QR pada LINGO atau buka link
+                    akses dari keluarga untuk melihat
+                    perkembangan anakmu.
+                </div>
+
+            )}
+
+
             {/* =================================================
                 HEADER
             ================================================= */}
@@ -510,10 +528,27 @@ function Report({
 
 
                 <div
-                    className="report-id"
+                    className="report-header-actions"
                 >
 
-                    {activeUserId}
+                    <button
+                        type="button"
+                        className="report-print-button"
+                        onClick={() =>
+                            window.print()
+                        }
+                    >
+                        Cetak / Simpan PDF
+                    </button>
+
+
+                    <div
+                        className="report-id"
+                    >
+
+                        {activeUserId}
+
+                    </div>
 
                 </div>
 

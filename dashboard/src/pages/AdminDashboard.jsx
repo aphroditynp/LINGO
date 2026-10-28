@@ -11,6 +11,43 @@ import {
 import API from "../api";
 
 
+// "Terakhir kirim data" dibuat relatif agar mudah dibaca admin.
+function formatLastSeen(isoTime) {
+
+    if (!isoTime) {
+
+        return "Belum pernah";
+
+    }
+
+
+    const minutes =
+        Math.floor(
+            (Date.now() - new Date(isoTime).getTime()) / 60000
+        );
+
+
+    if (minutes < 1) return "Baru saja";
+
+    if (minutes < 60) return `${minutes} menit lalu`;
+
+    if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} jam lalu`;
+
+    if (minutes < 7 * 24 * 60) return `${Math.floor(minutes / 1440)} hari lalu`;
+
+
+    return new Date(isoTime).toLocaleDateString(
+        "id-ID",
+        {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+}
+
+
 function AdminDashboard() {
 
     const navigate =
@@ -1234,6 +1271,10 @@ function AdminDashboard() {
                                 </th>
 
                                 <th>
+                                    Terakhir Kirim Data
+                                </th>
+
+                                <th>
                                     Status
                                 </th>
 
@@ -1295,6 +1336,15 @@ function AdminDashboard() {
                                                     ? `${device.age} tahun`
                                                     : "-"
                                             }
+
+                                        </td>
+
+
+                                        <td>
+
+                                            {formatLastSeen(
+                                                device.last_seen_at
+                                            )}
 
                                         </td>
 

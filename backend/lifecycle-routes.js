@@ -83,6 +83,7 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
           name: user?.name || "-",
           age: user?.age ?? null,
           paired_at: device.paired_at || null,
+          last_seen_at: device.last_seen_at || null,
           status: "active",
         });
       }
@@ -91,7 +92,7 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
         if (typeof deviceId !== "string" || list.has(deviceId)) continue;
         list.set(deviceId, {
           device_id: deviceId, user_id: null, name: "-", age: null,
-          paired_at: null, status: "available",
+          paired_at: null, last_seen_at: null, status: "available",
         });
       }
       res.json([...list.values()].sort((a, b) => a.device_id.localeCompare(b.device_id)));

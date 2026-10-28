@@ -45,3 +45,29 @@ export function clearCurrentUserId() {
     );
 
 }
+
+
+/**
+ * true bila perangkat ini belum pernah scan QR / membuka link akses,
+ * sehingga yang tampil adalah profil contoh (BIMA001).
+ */
+export function isUsingDemoProfile(userIdOverride = null) {
+
+    if (userIdOverride) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        return !localStorage.getItem("lingoUserId");
+
+    } catch {
+
+        return true;
+
+    }
+
+}
