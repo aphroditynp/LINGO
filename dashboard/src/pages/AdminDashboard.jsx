@@ -196,11 +196,12 @@ function AdminDashboard() {
             const confirmed =
                 window.confirm(
 
-                    `Apakah kamu yakin ingin mereset ${deviceId}?\n\n` +
+                    `Reset ${deviceId}?\n\n` +
 
-                    `Data history belajar tidak akan dihapus.\n` +
+                    `LINGO dilepas dari profil anak dan QR yang sama ` +
+                    `kembali ke halaman aktivasi awal.\n` +
 
-                    `LINGO akan mendapatkan QR aktivasi baru.`
+                    `Profil lama dinonaktifkan, history belajarnya tetap tersimpan.`
 
                 );
 
@@ -273,6 +274,162 @@ function AdminDashboard() {
             }
 
         };
+
+
+    // =====================================================
+    // HAPUS LINGO
+    // =====================================================
+
+    const handleDeleteDevice =
+        async (deviceId) => {
+
+            const confirmed =
+                window.confirm(
+
+                    `HAPUS ${deviceId}?\n\n` +
+
+                    `LINGO dan QR-nya dihapus dari sistem. QR lama ` +
+                    `tidak bisa dipakai lagi.\n` +
+
+                    `Profil yang terpasang dinonaktifkan, history-nya tetap tersimpan.`
+
+                );
+
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            try {
+
+                setResetting(
+                    `hapus:${deviceId}`
+                );
+
+
+                setNewQR(
+                    null
+                );
+
+
+                await API.delete(
+                    `/admin/devices/${deviceId}`,
+                    adminConfig
+                );
+
+
+                await loadData();
+
+            } catch (requestError) {
+
+                console.error(
+                    "DELETE DEVICE ERROR:",
+                    requestError
+                );
+
+
+                alert(
+                    requestError
+                        .response
+                        ?.data
+                        ?.error ||
+                    "Hapus LINGO gagal."
+                );
+
+            } finally {
+
+                setResetting(
+                    ""
+                );
+
+            }
+
+        };
+
+
+
+    // =====================================================
+    // NONAKTIFKAN / AKTIFKAN PROFIL
+    // =====================================================
+
+    const handleToggleUser =
+        async (user) => {
+
+            const deactivate =
+                user.active !== false;
+
+
+            const confirmed =
+                window.confirm(
+
+                    deactivate
+
+                        ?
+
+                        `Nonaktifkan profil ${user.name || user.id}?\n\n` +
+                        `Orang tua tidak bisa membuka dashboard lewat QR atau link. ` +
+                        `LINGO yang terpasang kembali ke aktivasi awal. ` +
+                        `History belajar tetap tersimpan.`
+
+                        :
+
+                        `Aktifkan lagi profil ${user.name || user.id}?`
+
+                );
+
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            try {
+
+                setResetting(
+                    `profil:${user.id}`
+                );
+
+
+                await API.post(
+                    `/admin/users/${user.id}/${deactivate ? "deactivate" : "activate"}`,
+                    {},
+                    adminConfig
+                );
+
+
+                await loadData();
+
+            } catch (requestError) {
+
+                console.error(
+                    "TOGGLE USER ERROR:",
+                    requestError
+                );
+
+
+                alert(
+                    requestError
+                        .response
+                        ?.data
+                        ?.error ||
+                    "Gagal mengubah status profil."
+                );
+
+            } finally {
+
+                setResetting(
+                    ""
+                );
+
+            }
+
+        };
+
 
 
     // =====================================================
@@ -608,7 +765,20 @@ function AdminDashboard() {
                     </p>
 
 
+                    {newQR.same_qr ? (
+
+                        <p>
+                            Scan QR yang sama pada LINGO
+                            ini untuk aktivasi ulang
+                            dengan profil anak baru.
+                        </p>
+
+                    ) : (
+
+                    <>
+
                     <p>
+                        QR lama tidak tercatat.
                         QR aktivasi baru:
                     </p>
 
@@ -649,6 +819,10 @@ function AdminDashboard() {
                         Salin Link Aktivasi
 
                     </button>
+
+                    </>
+
+                    )}
 
                 </div>
 
@@ -768,6 +942,10 @@ function AdminDashboard() {
                                 </th>
 
                                 <th>
+                                    Status
+                                </th>
+
+                                <th>
                                     Aksi
                                 </th>
 
@@ -852,6 +1030,24 @@ function AdminDashboard() {
 
                                         <td>
 
+                                            <span
+                                                className={
+                                                    user.active === false
+                                                        ? "admin-status inactive"
+                                                        : "admin-status"
+                                                }
+                                            >
+                                                {user.active === false
+                                                    ? "Nonaktif"
+                                                    : "Aktif"
+                                                }
+                                            </span>
+
+                                        </td>
+
+
+                                        <td>
+
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -879,7 +1075,8 @@ function AdminDashboard() {
                                                 }
                                                 disabled={
                                                     linkStatus[user.id] ===
-                                                    "loading"
+                                                    "loading" ||
+                                                    user.active === false
                                                 }
                                             >
 
@@ -892,6 +1089,36 @@ function AdminDashboard() {
                                                         "Gagal, coba lagi"
                                                 }[linkStatus[user.id]] ||
                                                     "Salin Link Akses"
+                                                }
+
+                                            </button>
+
+
+                                            <button
+                                                type="button"
+                                                className={
+                                                    user.active === false
+                                                        ? undefined
+                                                        : "admin-danger-button"
+                                                }
+                                                onClick={() =>
+                                                    handleToggleUser(
+                                                        user
+                                                    )
+                                                }
+                                                disabled={
+                                                    resetting ===
+                                                    `profil:${user.id}`
+                                                }
+                                                style={{
+                                                    marginLeft:
+                                                        "8px"
+                                                }}
+                                            >
+
+                                                {user.active === false
+                                                    ? "Aktifkan"
+                                                    : "Nonaktifkan"
                                                 }
 
                                             </button>
@@ -1075,32 +1302,16 @@ function AdminDashboard() {
                                         <td>
 
                                             <span
-                                                style={{
-                                                    display:
-                                                        "inline-block",
-
-                                                    padding:
-                                                        "6px 12px",
-
-                                                    borderRadius:
-                                                        "20px",
-
-                                                    background:
-                                                        "#e8f8ef",
-
-                                                    color:
-                                                        "#24955a",
-
-                                                    fontSize:
-                                                        "13px",
-
-                                                    fontWeight:
-                                                        "600"
-                                                }}
+                                                className={
+                                                    device.status === "available"
+                                                        ? "admin-status inactive"
+                                                        : "admin-status"
+                                                }
                                             >
-
-                                                Aktif
-
+                                                {device.status === "available"
+                                                    ? "Belum dipakai"
+                                                    : "Terpasang"
+                                                }
                                             </span>
 
                                         </td>
@@ -1130,6 +1341,8 @@ function AdminDashboard() {
                                             )}
 
 
+                                            {device.user_id && (
+
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -1141,6 +1354,10 @@ function AdminDashboard() {
                                                     resetting ===
                                                     device.device_id
                                                 }
+                                                style={{
+                                                    marginRight:
+                                                        "8px"
+                                                }}
                                             >
 
                                                 {
@@ -1154,6 +1371,32 @@ function AdminDashboard() {
                                                         :
 
                                                         "Reset LINGO"
+                                                }
+
+                                            </button>
+
+                                            )}
+
+
+                                            <button
+                                                type="button"
+                                                className="admin-danger-button"
+                                                onClick={() =>
+                                                    handleDeleteDevice(
+                                                        device.device_id
+                                                    )
+                                                }
+                                                disabled={
+                                                    resetting ===
+                                                    `hapus:${device.device_id}`
+                                                }
+                                            >
+
+                                                {
+                                                    resetting ===
+                                                    `hapus:${device.device_id}`
+                                                        ? "Menghapus..."
+                                                        : "Hapus LINGO"
                                                 }
 
                                             </button>

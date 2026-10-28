@@ -2641,3 +2641,74 @@ tr:hover td {
     }
 
 }
+
+/* =====================================================
+   ADMIN: STATUS & TOMBOL BAHAYA
+===================================================== */
+
+.admin-status {
+    display: inline-block;
+
+    padding: 6px 12px;
+
+    border-radius: 20px;
+
+    background: #e8f8ef;
+
+    color: #24955a;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.admin-status.inactive {
+    background: #EEF1F5;
+
+    color: #697386;
+}
+
+.admin-danger-button {
+    background: #D92D20;
+}
+
+.admin-danger-button:hover {
+    background: #B42318;
+}
+
+
+/* =====================================================
+   PROFIL: HAPUS & NONAKTIF
+===================================================== */
+
+.profile-danger-card {
+    margin-top: 25px;
+
+    border-color: #F5B5B5;
+}
+
+.profile-danger-card h2 {
+    color: #B42318;
+}
+
+.profile-form-card.profile-danger-card button {
+    background: #D92D20;
+}
+
+.profile-form-card.profile-danger-card button:hover {
+    background: #B42318;
+}
+
+.profile-inactive {
+    margin-bottom: 20px;
+
+    padding: 16px 18px;
+
+    border-radius: 14px;
+
+    background: #FEECEC;
+
+    font-weight: 600;
+}

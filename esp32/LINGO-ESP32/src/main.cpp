@@ -665,6 +665,11 @@ bool uploadPagePayload(const PageUpload &s) {
   String response = http.getString();
   http.end();
   Serial.printf("[UPLOAD] HTTP %d %s\n", code, response.c_str());
+  if (code == 409) {
+    // Ditolak permanen (mis. sesi pemilik lama setelah LINGO di-reset): buang dari queue.
+    Serial.println("[UPLOAD] Sesi ditolak permanen server; dihapus dari queue.");
+    return true;
+  }
   return code >= 200 && code < 300;
 #endif
 }

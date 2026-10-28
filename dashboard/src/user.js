@@ -34,3 +34,14 @@ export function setCurrentUserId(userId) {
     );
 
 }
+
+/**
+ * Menghapus USER ID tersimpan (setelah profil dihapus).
+ */
+export function clearCurrentUserId() {
+
+    localStorage.removeItem(
+        "lingoUserId"
+    );
+
+}

@@ -18,9 +18,11 @@ function attachAccessRoutes({ app, db, FRONTEND_URL }) {
   const users = db.collection("users");
   const accessLinks = db.collection("accessLinks");
 
+  // Profil yang dinonaktifkan admin tidak bisa dibuka lewat QR atau link.
   async function userExists(userId) {
     if (typeof userId !== "string" || !USER_ID_PATTERN.test(userId)) return false;
-    return (await users.doc(userId).get()).exists;
+    const doc = await users.doc(userId).get();
+    return doc.exists && doc.data().active !== false;
   }
 
   app.post("/api/devices/access", async (req, res) => {

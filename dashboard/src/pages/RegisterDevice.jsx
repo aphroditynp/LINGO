@@ -7,6 +7,7 @@ function RegisterDevice() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const code = searchParams.get("code") || "";
+    const profileDeleted = searchParams.get("deleted") === "1";
 
     const [name, setName] = useState("");
     const [age, setAge] = useState("");
@@ -81,7 +82,12 @@ function RegisterDevice() {
             </header>
 
             <section className="profile-form-card device-register-card">
-                {!code ? (
+                {!code && profileDeleted ? (
+                    <p className="profile-message" role="status">
+                        Profil berhasil dihapus. Scan QR pada LINGO untuk
+                        mendaftarkan profil anak yang baru.
+                    </p>
+                ) : !code ? (
                     <div className="device-register-error" role="alert">
                         Kode QR tidak ditemukan. Scan QR aktivasi yang ada pada
                         perangkat LINGO.

@@ -3,11 +3,28 @@ import {
     useState
 } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import API from "../api";
-import { getCurrentUserId } from "../user";
+import {
+    clearCurrentUserId,
+    getCurrentUserId
+} from "../user";
 
 
 function Profile() {
+
+    const navigate =
+        useNavigate();
+
+    const [deleteConfirm, setDeleteConfirm] =
+        useState("");
+
+    const [deleting, setDeleting] =
+        useState(false);
+
+    const [deleteError, setDeleteError] =
+        useState("");
 
     const [profile, setProfile] =
         useState(null);
@@ -193,6 +210,53 @@ function Profile() {
 
 
 
+    // Hapus profil permanen: profil, history, dan link akses.
+    // LINGO yang terpasang kembali ke halaman aktivasi awal.
+    const handleDeleteProfile = async (event) => {
+
+        event.preventDefault();
+
+        setDeleting(true);
+
+        setDeleteError("");
+
+
+        try {
+
+            await API.delete(
+                `/users/${getCurrentUserId()}`
+            );
+
+            clearCurrentUserId();
+
+            navigate(
+                "/register-device?deleted=1",
+                { replace: true }
+            );
+
+        } catch (error) {
+
+            console.log(error);
+
+            setDeleteError(
+                error.response?.data?.error ||
+                "Profil gagal dihapus."
+            );
+
+            setDeleting(false);
+
+        }
+
+    };
+
+
+    const deleteNameMatches =
+        deleteConfirm.trim().toLowerCase() ===
+        (profile?.name || "").trim().toLowerCase() &&
+        deleteConfirm.trim() !== "";
+
+
+
     if (loading) {
 
         return (
@@ -216,6 +280,20 @@ function Profile() {
     return (
 
         <div className="container profile-page">
+
+
+            {profile?.active === false && (
+
+                <div
+                    className="device-register-error profile-inactive"
+                    role="alert"
+                >
+                    Profil ini sudah dinonaktifkan admin.
+                    Scan QR pada LINGO untuk mendaftarkan
+                    profil anak yang baru.
+                </div>
+
+            )}
 
 
             <div className="profile-header">
@@ -469,6 +547,88 @@ function Profile() {
                     </p>
 
                 )}
+
+            </div>
+
+
+
+            {/* DELETE CARD */}
+
+            <div className="profile-form-card profile-danger-card">
+
+                <h2>
+                    Hapus Profil
+                </h2>
+
+                <p className="form-description">
+                    Profil, seluruh history belajar,
+                    dan link akses akan dihapus
+                    permanen dan tidak bisa
+                    dikembalikan. LINGO akan kembali
+                    ke halaman aktivasi awal sehingga
+                    QR-nya bisa dipakai untuk profil
+                    anak yang baru.
+                </p>
+
+
+                <form
+                    onSubmit={
+                        handleDeleteProfile
+                    }
+                >
+
+                    <label htmlFor="delete-confirm">
+                        Ketik nama anak
+                        {" "}
+                        <strong>
+                            {profile?.name || ""}
+                        </strong>
+                        {" "}
+                        untuk konfirmasi
+                    </label>
+
+                    <input
+                        id="delete-confirm"
+                        type="text"
+                        value={deleteConfirm}
+                        onChange={
+                            (event) =>
+                                setDeleteConfirm(
+                                    event.target.value
+                                )
+                        }
+                        autoComplete="off"
+                    />
+
+
+                    {deleteError && (
+
+                        <p
+                            className="device-register-error"
+                            role="alert"
+                        >
+                            {deleteError}
+                        </p>
+
+                    )}
+
+
+                    <button
+                        type="submit"
+                        disabled={
+                            !deleteNameMatches ||
+                            deleting
+                        }
+                    >
+
+                        {deleting
+                            ? "Menghapus..."
+                            : "Hapus Profil Permanen"
+                        }
+
+                    </button>
+
+                </form>
 
             </div>
 

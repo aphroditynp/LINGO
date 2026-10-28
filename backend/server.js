@@ -67,19 +67,6 @@ function hashActivationCode(code) {
 
 
 // =================================
-// GENERATE ACTIVATION CODE
-// =================================
-
-function generateActivationCode() {
-
-    return crypto
-        .randomBytes(32)
-        .toString("hex");
-
-}
-
-
-// =================================
 // TEST SERVER
 // =================================
 
@@ -610,6 +597,13 @@ app.post(
                     playedAt = t;
                 }
             }
+            // Sesi yang dimainkan sebelum LINGO dipasangkan ke profil ini (mis. sisa
+            // antrean pemilik lama setelah reset) ditolak permanen: firmware membuangnya.
+            const pairedAt = new Date(deviceSnapshot.data().paired_at);
+            if (playedAt !== uploadedAt && !Number.isNaN(pairedAt.getTime()) &&
+                playedAt < pairedAt) {
+                return res.status(409).json({status:"error", message:"Sesi dimainkan sebelum LINGO dipasangkan ke profil ini"});
+            }
             const sessionId = typeof data.session_id === "string" ? data.session_id : "";
             if (sessionId && !/^[A-Za-z0-9_-]{5,100}$/.test(sessionId)) {
                 return res.status(400).json({status:"error", message:"session_id tidak valid"});
@@ -1032,130 +1026,6 @@ function requireAdmin(
 
 
 // =====================================================
-// ADMIN - GET ALL DEVICES
-// =====================================================
-
-app.get(
-    "/api/admin/devices",
-
-    requireAdmin,
-
-    async (req, res) => {
-
-        try {
-
-            const snapshot =
-                await db
-                    .collection("devices")
-                    .get();
-
-
-            const devices = [];
-
-
-            for (
-                const doc
-                of snapshot.docs
-            ) {
-
-                const device =
-                    doc.data();
-
-
-                let user =
-                    null;
-
-
-                if (
-                    device.user_id
-                ) {
-
-                    const userDoc =
-                        await db
-                            .collection(
-                                "users"
-                            )
-                            .doc(
-                                device.user_id
-                            )
-                            .get();
-
-
-                    if (
-                        userDoc.exists
-                    ) {
-
-                        user = {
-
-                            id:
-                                userDoc.id,
-
-                            ...userDoc.data()
-
-                        };
-
-                    }
-
-                }
-
-
-                devices.push({
-
-                    device_id:
-                        device.device_id ||
-                        doc.id,
-
-                    user_id:
-                        device.user_id ||
-                        null,
-
-                    name:
-                        user?.name ||
-                        "-",
-
-                    age:
-                        user?.age ??
-                        null,
-
-                    paired_at:
-                        device.paired_at ||
-                        null,
-
-                    status:
-                        "active"
-
-                });
-
-            }
-
-
-            res.json(
-                devices
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "ADMIN GET DEVICES ERROR:",
-                error
-            );
-
-
-            res.status(500).json({
-
-                error:
-                    "Gagal mengambil data perangkat."
-
-            });
-
-        }
-
-    }
-);
-
-
-// =====================================================
 // ADMIN - GET ALL USERS
 // =====================================================
 
@@ -1220,185 +1090,6 @@ app.get(
 
 
 // =====================================================
-// ADMIN - RESET LINGO
-// =====================================================
-
-app.post(
-    "/api/admin/devices/:deviceId/reset",
-
-    requireAdmin,
-
-    async (req, res) => {
-
-        try {
-
-            const deviceId =
-                req.params.deviceId;
-
-
-            if (
-                !/^[A-Za-z0-9_-]{3,64}$/
-                    .test(deviceId)
-            ) {
-
-                return res.status(400).json({
-
-                    error:
-                        "Device ID tidak valid."
-
-                });
-
-            }
-
-
-            const deviceRef =
-                db
-                    .collection("devices")
-                    .doc(deviceId);
-
-
-            const deviceDoc =
-                await deviceRef.get();
-
-
-            if (
-                !deviceDoc.exists
-            ) {
-
-                return res.status(404).json({
-
-                    error:
-                        "LINGO tidak ditemukan."
-
-                });
-
-            }
-
-
-            const device =
-                deviceDoc.data();
-
-
-            const oldUserId =
-                device.user_id ||
-                null;
-
-
-            // ==========================================
-            // Buat activation code baru
-            // ==========================================
-
-            const activationCode =
-                generateActivationCode();
-
-
-            const activationHash =
-                hashActivationCode(
-                    activationCode
-                );
-
-
-            const activationRef =
-                db
-                    .collection(
-                        "deviceActivations"
-                    )
-                    .doc(
-                        activationHash
-                    );
-
-
-            const now =
-                new Date()
-                    .toISOString();
-
-
-            // ==========================================
-            // Simpan activation baru
-            // ==========================================
-
-            await activationRef.set({
-
-                device_id:
-                    deviceId,
-
-                status:
-                    "available",
-
-                created_at:
-                    now,
-
-                created_by:
-                    "admin"
-
-            });
-
-
-            // ==========================================
-            // Lepaskan pairing device
-            // ==========================================
-
-            await deviceRef.delete();
-
-
-            // ==========================================
-            // QR URL
-            // ==========================================
-
-            const activationUrl =
-                `${FRONTEND_URL}/register-device?code=${activationCode}`;
-
-
-            console.log(
-                `LINGO RESET: ${deviceId}`
-            );
-
-
-            res.json({
-
-                status:
-                    "success",
-
-                message:
-                    "LINGO berhasil di-reset.",
-
-                device_id:
-                    deviceId,
-
-                previous_user_id:
-                    oldUserId,
-
-                activation_code:
-                    activationCode,
-
-                activation_url:
-                    activationUrl
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "ADMIN RESET ERROR:",
-                error
-            );
-
-
-            res.status(500).json({
-
-                error:
-                    "Gagal melakukan reset LINGO."
-
-            });
-
-        }
-
-    }
-);
-
-
-// =====================================================
 // SERVER
 // =====================================================
 
@@ -1412,6 +1103,9 @@ require("./teacher-routes").attachTeacherRoutes({ app, db, requireAdmin, JWT_SEC
 
 // Orang tua: buka dashboard di perangkat lain lewat scan ulang QR atau link bagikan.
 require("./access-routes").attachAccessRoutes({ app, db, FRONTEND_URL });
+
+// Admin: reset / hapus LINGO, nonaktifkan profil. Orang tua: hapus profil.
+require("./lifecycle-routes").attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL });
 
 app.listen(
     PORT,
