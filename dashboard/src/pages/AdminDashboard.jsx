@@ -433,11 +433,13 @@ function AdminDashboard() {
                         `Nonaktifkan profil ${user.name || user.id}?\n\n` +
                         `Orang tua tidak bisa membuka dashboard lewat QR atau link. ` +
                         `LINGO yang terpasang kembali ke aktivasi awal. ` +
-                        `History belajar tetap tersimpan.`
+                        `History belajar tetap tersimpan, dan saat diaktifkan lagi ` +
+                        `profil otomatis terpasang di LINGO yang sama (jika belum dipakai anak lain).`
 
                         :
 
-                        `Aktifkan lagi profil ${user.name || user.id}?`
+                        `Aktifkan lagi profil ${user.name || user.id}?\n\n` +
+                        `Profil akan dipasang lagi di LINGO sebelumnya jika LINGO itu belum dipakai anak lain.`
 
                 );
 
@@ -456,7 +458,7 @@ function AdminDashboard() {
                 );
 
 
-                await API.post(
+                const response = await API.post(
                     `/admin/users/${user.id}/${deactivate ? "deactivate" : "activate"}`,
                     {},
                     adminConfig
@@ -464,6 +466,29 @@ function AdminDashboard() {
 
 
                 await loadData();
+
+
+                if (!deactivate) {
+
+                    const restored = response.data.restored_devices || [];
+                    const skipped = response.data.skipped_devices || [];
+
+                    alert(
+                        [
+                            `Profil ${user.name || user.id} aktif lagi.`,
+                            restored.length
+                                ? `Terpasang lagi di ${restored.join(", ")}. Orang tua bisa scan QR LINGO yang sama.`
+                                : "",
+                            ...skipped.map(
+                                (item) => `${item.device_id} tidak dipasang: ${item.reason}`
+                            ),
+                            !restored.length && !skipped.length
+                                ? "Belum ada LINGO sebelumnya. Bagikan link akses atau pasangkan ke LINGO baru."
+                                : "",
+                        ].filter(Boolean).join("\n\n")
+                    );
+
+                }
 
             } catch (requestError) {
 

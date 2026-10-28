@@ -9,7 +9,9 @@ const USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 // - Reset LINGO   : lepas pasangan, QR yang SAMA kembali ke form aktivasi,
 //                   profil lama dinonaktifkan (data tetap ada).
 // - Hapus LINGO   : hapus perangkat dan seluruh QR-nya (QR tidak berlaku).
-// - Nonaktifkan   : profil tidak bisa dibuka lewat QR/link; LINGO-nya dilepas.
+// - Nonaktifkan   : profil tidak bisa dibuka lewat QR/link; LINGO-nya dilepas
+//                   tetapi diingat, sehingga saat diaktifkan lagi profil
+//                   kembali terpasang di LINGO sebelumnya (jika masih kosong).
 // - Hapus profil  : (orang tua) hapus profil, sesi, dan link akses permanen.
 function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
   const devices = db.collection("devices");
@@ -48,13 +50,33 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
     return paired.map((doc) => doc.id);
   }
 
-  async function setUserActive(userId, active) {
+  async function setUserActive(userId, active, extra = {}) {
     const ref = users.doc(userId);
     if (!(await ref.get()).exists) return false;
     await ref.update(active
-      ? { active: true, reactivated_at: now() }
-      : { active: false, deactivated_at: now() });
+      ? { active: true, reactivated_at: now(), ...extra }
+      : { active: false, deactivated_at: now(), ...extra });
     return true;
+  }
+
+  // Pasangkan lagi profil ke LINGO lamanya, selama LINGO itu belum dipakai
+  // profil lain dan QR-nya belum dihapus.
+  async function restoreDevice(userId, deviceId) {
+    if ((await devices.doc(deviceId).get()).exists) {
+      return { device_id: deviceId, restored: false, reason: "LINGO sudah dipakai profil lain." };
+    }
+    const qrDocs = await activationsOf(deviceId);
+    if (qrDocs.length === 0) {
+      return { device_id: deviceId, restored: false, reason: "LINGO sudah dihapus." };
+    }
+    const pairedAt = now();
+    await devices.doc(deviceId).set({ device_id: deviceId, user_id: userId, paired_at: pairedAt });
+    for (const doc of qrDocs) {
+      await activations.doc(doc.id).set({
+        ...doc.data(), status: "claimed", user_id: userId, claimed_at: pairedAt,
+      });
+    }
+    return { device_id: deviceId, restored: true };
   }
 
   function badDeviceId(req, res) {
@@ -109,7 +131,7 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
       const deviceDoc = await devices.doc(deviceId).get();
       const previousUserId = deviceDoc.exists ? deviceDoc.data().user_id || null : null;
       const qrCount = await releaseDevice(deviceId);
-      if (previousUserId) await setUserActive(previousUserId, false);
+      if (previousUserId) await setUserActive(previousUserId, false, { previous_device_ids: [deviceId] });
 
       let activationUrl = null;
       if (qrCount === 0) {
@@ -152,7 +174,7 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
       const previousUserId = deviceDoc.exists ? deviceDoc.data().user_id || null : null;
       for (const doc of qrDocs) await activations.doc(doc.id).delete();
       await devices.doc(deviceId).delete();
-      if (previousUserId) await setUserActive(previousUserId, false);
+      if (previousUserId) await setUserActive(previousUserId, false, { previous_device_ids: [] });
       console.log(`LINGO DELETED: ${deviceId}`);
       res.json({ status: "success", device_id: deviceId, previous_user_id: previousUserId });
     } catch (error) {
@@ -164,10 +186,15 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
   app.post("/api/admin/users/:userId/deactivate", requireAdmin, async (req, res) => {
     if (badUserId(req, res)) return;
     try {
-      if (!await setUserActive(req.params.userId, false)) {
-        return res.status(404).json({ error: "Profil tidak ditemukan." });
-      }
-      const releasedDevices = await releaseDevicesOfUser(req.params.userId);
+      const userId = req.params.userId;
+      const userDoc = await users.doc(userId).get();
+      if (!userDoc.exists) return res.status(404).json({ error: "Profil tidak ditemukan." });
+      const releasedDevices = await releaseDevicesOfUser(userId);
+      // Nonaktif dua kali tidak boleh menghapus ingatan LINGO sebelumnya.
+      const remembered = releasedDevices.length
+        ? releasedDevices
+        : userDoc.data().previous_device_ids || [];
+      await setUserActive(userId, false, { previous_device_ids: remembered });
       res.json({ status: "success", active: false, released_devices: releasedDevices });
     } catch (error) {
       console.error("ADMIN DEACTIVATE USER ERROR:", error);
@@ -178,10 +205,20 @@ function attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL }) {
   app.post("/api/admin/users/:userId/activate", requireAdmin, async (req, res) => {
     if (badUserId(req, res)) return;
     try {
-      if (!await setUserActive(req.params.userId, true)) {
-        return res.status(404).json({ error: "Profil tidak ditemukan." });
+      const userId = req.params.userId;
+      const userDoc = await users.doc(userId).get();
+      if (!userDoc.exists) return res.status(404).json({ error: "Profil tidak ditemukan." });
+      const results = [];
+      for (const deviceId of userDoc.data().previous_device_ids || []) {
+        if (DEVICE_ID_PATTERN.test(deviceId)) results.push(await restoreDevice(userId, deviceId));
       }
-      res.json({ status: "success", active: true });
+      await setUserActive(userId, true, { previous_device_ids: [] });
+      res.json({
+        status: "success",
+        active: true,
+        restored_devices: results.filter((r) => r.restored).map((r) => r.device_id),
+        skipped_devices: results.filter((r) => !r.restored),
+      });
     } catch (error) {
       console.error("ADMIN ACTIVATE USER ERROR:", error);
       res.status(500).json({ error: "Gagal mengaktifkan profil." });

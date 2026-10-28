@@ -74,9 +74,14 @@ async function run() {
     a = await hit("GET", "/admin/devices");
     assert.deepEqual(a.data.map((d) => [d.device_id, d.status]), [["LINGO001", "available"], ["LINGO002", "active"]]);
 
-    // Aktifkan lagi profil.
+    // Aktifkan lagi profil: otomatis terpasang lagi di LINGO sebelumnya.
     a = await hit("POST", "/admin/users/childA/activate");
     assert.equal(a.status, 200); assert.equal(collections.users.get("childA").active, true);
+    assert.deepEqual(a.data.restored_devices, ["LINGO001"]);
+    assert.equal(collections.devices.get("LINGO001").user_id, "childA");
+    assert.equal(collections.deviceActivations.get(sha256(code1)).status, "claimed");
+    a = await hit("POST", "/devices/access", { code: code1 }, false);
+    assert.deepEqual(a.data, { status: "claimed", user_id: "childA" });
 
     // Hapus LINGO: QR tidak berlaku lagi.
     a = await hit("DELETE", "/admin/devices/LINGO001");
@@ -100,6 +105,31 @@ async function run() {
     // Nonaktifkan profil tanpa LINGO.
     a = await hit("POST", "/admin/users/childA/deactivate");
     assert.equal(a.status, 200); assert.equal(collections.users.get("childA").active, false);
+
+    // Nonaktifkan lalu aktifkan lagi di LINGO yang sama.
+    const code3 = "c".repeat(64);
+    collections.users.set("childC", { name: "Anak C" });
+    collections.devices.set("LINGO003", { device_id: "LINGO003", user_id: "childC", paired_at: "2026-10-01" });
+    collections.deviceActivations.set(sha256(code3), { device_id: "LINGO003", status: "claimed", user_id: "childC" });
+    a = await hit("POST", "/admin/users/childC/deactivate");
+    assert.deepEqual(a.data.released_devices, ["LINGO003"]);
+    assert.equal(collections.devices.has("LINGO003"), false);
+    a = await hit("POST", "/admin/users/childC/deactivate"); // dua kali tetap ingat LINGO003
+    assert.deepEqual(collections.users.get("childC").previous_device_ids, ["LINGO003"]);
+    a = await hit("POST", "/admin/users/childC/activate");
+    assert.deepEqual(a.data.restored_devices, ["LINGO003"]);
+    assert.equal(collections.devices.get("LINGO003").user_id, "childC");
+    a = await hit("POST", "/devices/access", { code: code3 }, false);
+    assert.deepEqual(a.data, { status: "claimed", user_id: "childC" });
+
+    // LINGO lama sudah dipakai anak lain: profil aktif tapi tidak dipasang.
+    await hit("POST", "/admin/users/childC/deactivate");
+    collections.devices.set("LINGO003", { device_id: "LINGO003", user_id: "childD", paired_at: "2026-10-02" });
+    a = await hit("POST", "/admin/users/childC/activate");
+    assert.equal(collections.users.get("childC").active, true);
+    assert.deepEqual(a.data.restored_devices, []);
+    assert.equal(a.data.skipped_devices[0].device_id, "LINGO003");
+    assert.equal(collections.devices.get("LINGO003").user_id, "childD");
     console.log("lifecycle integration test: OK");
   } finally { srv.close(); }
 }
