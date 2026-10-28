@@ -113,7 +113,21 @@ function attachTeacherRoutes({ app, db, requireAdmin, JWT_SECRET }) {
     try {
       // Query hanya user_id yang telah diberikan oleh admin, tidak pernah seluruh koleksi.
       const studentDocs = await Promise.all(req.teacher.assigned_user_ids.map(id => users.doc(id).get()));
-      return res.json(studentDocs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() })));
+      const existing = studentDocs.filter(d => d.exists);
+      // Ringkasan untuk kartu murid: jumlah sesi, rata-rata nilai, aktivitas terakhir.
+      const summaries = await Promise.all(existing.map(async (d) => {
+        const rows = (await sessions.where("user_id", "==", d.id).get()).docs.map(x => x.data());
+        const graded = rows.filter(x => x.status !== "pending_model" && Number.isFinite(x.accuracy));
+        const dates = rows.map(x => x.date).filter(Boolean).sort();
+        return {
+          session_count: rows.length,
+          average_accuracy: graded.length
+            ? Math.round(graded.reduce((sum, x) => sum + x.accuracy, 0) / graded.length)
+            : null,
+          last_activity: dates.length ? dates[dates.length - 1] : null,
+        };
+      }));
+      return res.json(existing.map((d, i) => ({ id: d.id, ...d.data(), ...summaries[i] })));
     } catch (error) {
       console.error("TEACHER STUDENTS:", error.message);
       return res.status(500).json({ error: "Gagal mengambil data murid." });

@@ -1,0 +1,93 @@
+/* LINGO — halaman guru. Kelas td-* agar tidak bentrok dengan gaya lain. */
+.td-page { padding-top: 30px; padding-bottom: 50px; color: #24304A; }
+
+.td-hero {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;
+  padding: 30px 32px; border-radius: 24px; color: white;
+  background: linear-gradient(135deg, #4F7CFF 0%, #6C5CE7 100%);
+  box-shadow: 0 14px 34px rgba(79, 124, 255, 0.25);
+}
+.td-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; opacity: 0.85; }
+.td-hero h1 { margin: 8px 0 6px; font-size: clamp(26px, 5vw, 36px); }
+.td-hero p { margin: 0; opacity: 0.9; line-height: 1.5; }
+.td-hero .td-logout {
+  flex-shrink: 0; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white; box-shadow: none;
+}
+.td-hero .td-logout:hover { background: rgba(255, 255, 255, 0.3); transform: none; box-shadow: none; }
+
+.td-error { margin: 18px 0 0; padding: 14px 16px; border-radius: 12px; background: #FEECEC; color: #B42318; }
+.td-loading { padding: 60px; text-align: center; color: #697386; }
+
+.td-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 22px 0; }
+.td-stat {
+  display: grid; gap: 6px; padding: 18px 20px; border-radius: 18px; background: white;
+  border: 1px solid #E8EDF5; box-shadow: 0 6px 18px rgba(36, 48, 74, 0.04);
+}
+.td-stat span { color: #697386; font-size: 13px; }
+.td-stat strong { font-size: 28px; line-height: 1.1; }
+.td-stat-alert { background: #FEECEC; border-color: #F5B5B5; }
+.td-stat-alert strong { color: #B42318; }
+
+.td-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.td-toolbar input {
+  flex: 1; min-width: 220px; padding: 13px 16px; border: 1px solid #DCE2EB; border-radius: 12px;
+  font-size: 14px; outline: none; background: white;
+}
+.td-toolbar input:focus, .td-toolbar select:focus { border-color: #4F7CFF; box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.12); }
+.td-toolbar label { display: flex; align-items: center; gap: 8px; color: #697386; font-size: 13px; font-weight: 600; }
+.td-toolbar select {
+  padding: 12px 14px; border: 1px solid #DCE2EB; border-radius: 12px; background: white;
+  font-size: 14px; color: #24304A; outline: none;
+}
+
+.td-empty { padding: 40px 20px; text-align: center; color: #697386; background: white; border: 1px dashed #DCE2EB; border-radius: 18px; }
+.td-empty strong { color: #24304A; font-size: 17px; }
+
+.td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+.td-card {
+  display: flex; flex-direction: column; gap: 16px; padding: 20px; border-radius: 20px;
+  background: white; border: 1px solid #E8EDF5; color: inherit; text-decoration: none;
+  box-shadow: 0 6px 18px rgba(36, 48, 74, 0.04); transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.td-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(36, 48, 74, 0.10); }
+.td-card:focus-visible { outline: 3px solid #B3C8FF; outline-offset: 3px; }
+.td-card-top { display: flex; align-items: center; gap: 12px; }
+.td-avatar {
+  width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center;
+  border-radius: 14px; color: white; font-size: 20px; font-weight: 800;
+}
+.td-card-name { min-width: 0; flex: 1; }
+.td-card-name h3 { margin: 0; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-card-name span { color: #697386; font-size: 13px; }
+.td-badge {
+  flex-shrink: 0; padding: 5px 10px; border-radius: 999px; background: #FEECEC; color: #B42318;
+  font-size: 11px; font-weight: 800;
+}
+
+.td-score-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.td-score-label span { color: #697386; font-size: 13px; }
+.td-score-label strong { font-size: 20px; }
+.td-bar { height: 9px; border-radius: 999px; background: #EEF1F5; overflow: hidden; }
+.td-bar-fill { height: 100%; border-radius: 999px; }
+
+.td-tone-good { color: #23774F; }
+.td-tone-medium { color: #B76E00; }
+.td-tone-low { color: #B42318; }
+.td-tone-none { color: #8A93A3; }
+.td-fill-good { background: #2BA471; }
+.td-fill-medium { background: #E5A21F; }
+.td-fill-low { background: #E5484D; }
+.td-fill-none { background: transparent; }
+
+.td-card-meta { display: flex; justify-content: space-between; gap: 10px; color: #697386; font-size: 13px; }
+.td-card-link { color: #4F7CFF; font-weight: 700; font-size: 14px; }
+
+@media (max-width: 860px) {
+  .td-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .td-hero { flex-direction: column; padding: 24px 20px; }
+  .td-stat strong { font-size: 24px; }
+  .td-toolbar label { width: 100%; justify-content: space-between; }
+}

@@ -78,6 +78,30 @@ function AdminDashboard() {
         useState(null);
 
 
+    // Tab aktif: "pengguna" (profil anak + LINGO) atau "guru".
+    const [activeTab, setActiveTab] =
+        useState(() => {
+            try {
+                return localStorage.getItem("lingoAdminTab") || "pengguna";
+            } catch {
+                return "pengguna";
+            }
+        });
+
+
+    const selectTab = (tab) => {
+
+        setActiveTab(tab);
+
+        try {
+            localStorage.setItem("lingoAdminTab", tab);
+        } catch {
+            // Tab tetap berpindah walau browser menolak penyimpanan.
+        }
+
+    };
+
+
     // Status tombol "Salin Link Akses" per user: "loading" | "copied" | "error".
     const [linkStatus, setLinkStatus] =
         useState({});
@@ -666,66 +690,84 @@ function AdminDashboard() {
 
 
             {/* =================================================
-                HEADER
+                HEADER + TAB
             ================================================= */}
 
-            <div
-                className="profile-header"
-                style={{
-                    marginBottom:
-                        "35px"
-                }}
-            >
+            <div className="admin-header">
 
-                <span>
-                    ADMINISTRATOR
-                </span>
+                <div className="profile-header">
 
+                    <span>
+                        ADMINISTRATOR
+                    </span>
 
-                <h1>
-                    Manajemen LINGO
-                </h1>
+                    <h1>
+                        Manajemen LINGO
+                    </h1>
 
+                    <p>
+                        Kelola profil anak, perangkat
+                        LINGO, dan akun guru.
+                    </p>
 
-                <p>
-                    Kelola perangkat LINGO
-                    dan profil anak yang terhubung.
-                </p>
+                </div>
 
-            </div>
-
-
-            <TeacherManager />
-
-            {/* =================================================
-                LOGOUT
-            ================================================= */}
-
-            <div
-                style={{
-                    display:
-                        "flex",
-
-                    justifyContent:
-                        "flex-end",
-
-                    marginBottom:
-                        "20px"
-                }}
-            >
 
                 <button
                     type="button"
+                    className="admin-logout"
                     onClick={
                         handleLogout
                     }
                 >
-
                     Logout
-
                 </button>
 
             </div>
+
+
+            <div
+                className="admin-tabs"
+                role="tablist"
+                aria-label="Bagian admin"
+            >
+
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === "pengguna"}
+                    className={activeTab === "pengguna" ? "active" : ""}
+                    onClick={() => selectTab("pengguna")}
+                >
+                    Pengguna &amp; LINGO
+                    <span className="admin-tab-count">
+                        {users.length}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === "guru"}
+                    className={activeTab === "guru" ? "active" : ""}
+                    onClick={() => selectTab("guru")}
+                >
+                    Guru
+                </button>
+
+            </div>
+
+
+            {activeTab === "guru" && (
+
+                <TeacherManager />
+
+            )}
+
+
+            {activeTab === "pengguna" && (
+
+            <>
 
 
             {/* =================================================
@@ -1465,6 +1507,11 @@ function AdminDashboard() {
                 )}
 
             </div>
+
+
+            </>
+
+            )}
 
 
         </main>
