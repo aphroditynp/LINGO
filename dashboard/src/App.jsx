@@ -13,6 +13,7 @@ import History from "./pages/History";
 import Report from "./pages/Report";
 import Profile from "./pages/Profile";
 import RegisterDevice from "./pages/RegisterDevice";
+import AccessLink from "./pages/AccessLink";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -44,6 +45,14 @@ function App() {
                     path="/register-device"
                     element={
                         <RegisterDevice />
+                    }
+                />
+
+
+                <Route
+                    path="/akses"
+                    element={
+                        <AccessLink />
                     }
                 />
 

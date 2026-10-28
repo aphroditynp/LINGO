@@ -1980,6 +1980,49 @@ tr:hover td {
     line-height: 1.5;
 }
 
+.profile-share-card {
+    margin-top: 25px;
+}
+
+.share-actions {
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 15px;
+}
+
+.share-actions button,
+.share-actions .share-whatsapp {
+    flex: 1;
+
+    margin-top: 0;
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    text-align: center;
+
+    text-decoration: none;
+
+    box-sizing: border-box;
+}
+
+.share-actions .share-whatsapp {
+    background: #25A35A;
+
+    color: white;
+}
+
+.share-actions .share-whatsapp:hover {
+    background: #1E8C4C;
+}
+
 
 /* MOBILE */
 
@@ -1991,6 +2034,10 @@ tr:hover td {
 
     .profile-layout {
         grid-template-columns: 1fr;
+    }
+
+    .share-actions {
+        flex-direction: column;
     }
 
     .profile-info-card,

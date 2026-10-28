@@ -1410,6 +1410,9 @@ const PORT =
 // Guru: akun dengan akses read-only hanya pada ID murid yang diizinkan admin.
 require("./teacher-routes").attachTeacherRoutes({ app, db, requireAdmin, JWT_SECRET });
 
+// Orang tua: buka dashboard di perangkat lain lewat scan ulang QR atau link bagikan.
+require("./access-routes").attachAccessRoutes({ app, db, FRONTEND_URL });
+
 app.listen(
     PORT,
     "0.0.0.0",

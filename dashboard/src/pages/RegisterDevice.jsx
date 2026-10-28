@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api";
 import { setCurrentUserId } from "../user";
@@ -11,7 +11,37 @@ function RegisterDevice() {
     const [name, setName] = useState("");
     const [age, setAge] = useState("");
     const [loading, setLoading] = useState(false);
+    const [checking, setChecking] = useState(Boolean(code));
     const [error, setError] = useState("");
+
+    // QR LINGO yang sudah terdaftar dipakai juga untuk masuk dari perangkat lain.
+    useEffect(() => {
+        if (!code) return;
+        let cancelled = false;
+
+        API.post("/devices/access", { code })
+            .then((response) => {
+                if (cancelled) return;
+                if (response.data.status === "claimed") {
+                    setCurrentUserId(response.data.user_id);
+                    navigate("/", { replace: true });
+                    return;
+                }
+                setChecking(false);
+            })
+            .catch((requestError) => {
+                if (cancelled) return;
+                setError(
+                    requestError.response?.data?.error ||
+                        "Gagal memeriksa QR. Periksa koneksi lalu coba lagi."
+                );
+                setChecking(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [code, navigate]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -44,12 +74,21 @@ function RegisterDevice() {
                 <h1>Daftarkan LINGO</h1>
                 <p>
                     Isi profil anak untuk memasangkan perangkat ini. Satu LINGO
-                    hanya dapat didaftarkan satu kali.
+                    hanya dapat didaftarkan satu kali. Jika LINGO sudah
+                    terdaftar, scan QR yang sama untuk membuka dashboard di
+                    perangkat ini.
                 </p>
             </header>
 
             <section className="profile-form-card device-register-card">
-                {code ? (
+                {!code ? (
+                    <div className="device-register-error" role="alert">
+                        Kode QR tidak ditemukan. Scan QR aktivasi yang ada pada
+                        perangkat LINGO.
+                    </div>
+                ) : checking ? (
+                    <p className="form-description">Memeriksa QR LINGO...</p>
+                ) : (
                     <>
                         <h2>Profil anak</h2>
                         <p className="form-description">
@@ -92,11 +131,6 @@ function RegisterDevice() {
                             </button>
                         </form>
                     </>
-                ) : (
-                    <div className="device-register-error" role="alert">
-                        Kode QR tidak ditemukan. Scan QR aktivasi yang ada pada
-                        perangkat LINGO.
-                    </div>
                 )}
             </section>
         </main>

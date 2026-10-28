@@ -27,6 +27,15 @@ function Profile() {
     const [message, setMessage] =
         useState("");
 
+    const [shareUrl, setShareUrl] =
+        useState("");
+
+    const [sharing, setSharing] =
+        useState(false);
+
+    const [shareMessage, setShareMessage] =
+        useState("");
+
 
 
     // Ambil profil
@@ -111,6 +120,72 @@ function Profile() {
         } finally {
 
             setSaving(false);
+
+        }
+
+    };
+
+
+
+    // Link agar ayah/ibu/guru bisa membuka dashboard ini di perangkat lain.
+    const handleCreateShareLink = async () => {
+
+        setSharing(true);
+
+        setShareMessage("");
+
+
+        try {
+
+            const response =
+                await API.post(
+                    "/access/share",
+                    {
+                        user_id: getCurrentUserId()
+                    }
+                );
+
+
+            setShareUrl(
+                response.data.url
+            );
+
+        } catch (error) {
+
+            console.log(error);
+
+            setShareMessage(
+                error.response?.data?.error ||
+                "Link gagal dibuat."
+            );
+
+        } finally {
+
+            setSharing(false);
+
+        }
+
+    };
+
+
+
+    const handleCopyShareLink = async () => {
+
+        try {
+
+            await navigator.clipboard.writeText(
+                shareUrl
+            );
+
+            setShareMessage(
+                "Link disalin."
+            );
+
+        } catch {
+
+            setShareMessage(
+                "Salin manual link di atas."
+            );
 
         }
 
@@ -296,6 +371,104 @@ function Profile() {
 
                 </div>
 
+
+            </div>
+
+
+
+            {/* SHARE CARD */}
+
+            <div className="profile-form-card profile-share-card">
+
+                <h2>
+                    Bagikan Akses
+                </h2>
+
+                <p className="form-description">
+                    Buka dashboard ini di HP atau laptop lain.
+                    Kirim link ke ayah, ibu, atau guru, atau
+                    scan ulang QR yang ada di LINGO. Siapa pun
+                    yang memegang link ini bisa melihat dan
+                    mengubah profil anak, jadi bagikan hanya
+                    ke orang yang dipercaya.
+                </p>
+
+
+                {shareUrl ? (
+
+                    <>
+
+                        <input
+                            type="text"
+                            value={shareUrl}
+                            readOnly
+                            onFocus={
+                                (event) =>
+                                    event.target.select()
+                            }
+                            aria-label="Link akses dashboard"
+                        />
+
+
+                        <div className="share-actions">
+
+                            <button
+                                type="button"
+                                onClick={
+                                    handleCopyShareLink
+                                }
+                            >
+                                Salin Link
+                            </button>
+
+
+                            <a
+                                className="share-whatsapp"
+                                href={
+                                    "https://wa.me/?text=" +
+                                    encodeURIComponent(
+                                        `Buka dashboard LINGO ${name || "anak"}: ${shareUrl}`
+                                    )
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Kirim via WhatsApp
+                            </a>
+
+                        </div>
+
+                    </>
+
+                ) : (
+
+                    <button
+                        type="button"
+                        onClick={
+                            handleCreateShareLink
+                        }
+                        disabled={sharing}
+                    >
+
+                        {sharing
+                            ? "Membuat link..."
+                            : "Buat Link Akses"
+                        }
+
+                    </button>
+
+                )}
+
+
+                {shareMessage && (
+
+                    <p className="profile-message">
+
+                        {shareMessage}
+
+                    </p>
+
+                )}
 
             </div>
 
