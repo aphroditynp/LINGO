@@ -600,6 +600,21 @@ void jadwalkanAudioHalamanSelesai(unsigned long perkiraanDurasiMs) {
   if (audioHalamanSelesaiPada == 0) audioHalamanSelesaiPada = 1;
 }
 
+// Tunggu (blocking) audio yang baru diputar sampai selesai, ditandai pesan
+// "play finished" DFPlayer, dengan batas waktu bila pesan tidak datang.
+void tungguAudioSelesai(unsigned long batasMs) {
+  while (myDFPlayer.available()) myDFPlayer.readType();
+  const unsigned long mulai = millis();
+  while (millis() - mulai < batasMs) {
+    if (myDFPlayer.available() &&
+        myDFPlayer.readType() == DFPlayerPlayFinished &&
+        millis() - mulai >= ABAIKAN_SELESAI_AWAL_MS) {
+      return;
+    }
+    delay(10);
+  }
+}
+
 bool audioSebelumHalamanSelesaiBerakhir() {
   if (myDFPlayer.available() &&
       myDFPlayer.readType() == DFPlayerPlayFinished &&
@@ -1476,12 +1491,12 @@ void handleButtonPress(int pinGlobal) {
             const bool halamanSelesai = maybeFinishCompletedPage();
             Serial.println("Pasangan BENAR!");
             if (daftarSoal[soalAktif].trackAudioGabungan != 0) {
+              // Sebut kata utuhnya dulu, lalu umpan balik "benar".
               myDFPlayer.playMp3Folder(daftarSoal[soalAktif].trackAudioGabungan);
-              if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_GABUNGAN_MS);
-            } else {
-              myDFPlayer.playMp3Folder(AUDIO_BENAR);
-              if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_BENAR_MS);
+              tungguAudioSelesai(DURASI_AUDIO_GABUNGAN_MS + 600);
             }
+            myDFPlayer.playMp3Folder(AUDIO_BENAR);
+            if (halamanSelesai) jadwalkanAudioHalamanSelesai(DURASI_AUDIO_BENAR_MS);
             soalAktif = -1; // Reset memori
           } else {
             notePageAnswer(soalAktif, false);
