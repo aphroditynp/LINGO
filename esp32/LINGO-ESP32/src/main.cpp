@@ -72,7 +72,7 @@ const unsigned long OTA_CUE_INTERVAL_MS = 1500; // jeda antar-ulangan track 172 
 // Mode hemat daya: tidur setelah 10 menit tanpa tombol ditekan,
 // bangun lagi dengan tombol MIC (GPIO 41).
 const unsigned long BATAS_DIAM_SEBELUM_TIDUR_MS = 10UL * 60UL * 1000UL;
-const unsigned long DURASI_AUDIO_MODE_ISTIRAHAT_MS = 4000; // sesuaikan dengan durasi 0208.mp3
+const unsigned long DURASI_AUDIO_MODE_ISTIRAHAT_MS = 5700; // 0208.mp3 = 5,47 s
 unsigned long lastActivityMs = 0;
 
 #define TRACK_LINGO_HIDUP 200
@@ -81,10 +81,10 @@ unsigned long lastActivityMs = 0;
 #define TRACK_WIFI_TERHUBUNG 401
 #define TRACK_MODE_OFFLINE 402
 
-const unsigned long DURASI_AUDIO_LINGO_HIDUP_MS = 3000; // sesuaikan dengan durasi 0200.mp3
+const unsigned long DURASI_AUDIO_LINGO_HIDUP_MS = 6000; // 0200.mp3 = 5,76 s
 
 const unsigned long WIFI_CONNECT_TIMEOUT = 15000;
-const unsigned long WIFI_AUDIO_INTERVAL = 7000;
+const unsigned long WIFI_AUDIO_INTERVAL = 15000; // 0399.mp3 = 12,81 s, 0400.mp3 = 7,34 s
 const unsigned long WIFI_PORTAL_RETRY_INTERVAL = 10000;
 // Jika WiFi putus saat LINGO dipakai: permainan tetap jalan,
 // sambung ulang diam-diam di latar belakang setiap 30 detik.
@@ -289,7 +289,7 @@ const KataBicara *daftarKataHalamanAktif();
 const int MAX_PERCOBAAN_BICARA = 3;
 const int AUDIO_TIGA_KALI_SALAH = 199; // "percobaan habis" (kalimat positif)
 const int AUDIO_SUARA_KURANG_JELAS = 198; // hanya noise / sunyi, tidak dihitung percobaan
-const unsigned long DURASI_AUDIO_PERCOBAAN_HABIS_MS = 3500; // sesuaikan dengan durasi 0199.mp3
+const unsigned long DURASI_AUDIO_PERCOBAAN_HABIS_MS = 5200; // 0199.mp3 = 4,95 s
 int jumlahPercobaanBicara[JUMLAH_KATA_BICARA] = {0};
 bool kataSudahBenar[JUMLAH_KATA_BICARA] = {false};
 int targetBicaraAktif = -1; // indeks 0-11 pada halaman Tantangan Bicara aktif
