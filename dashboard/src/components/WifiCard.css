@@ -1,0 +1,51 @@
+/* Kartu "WiFi LINGO" di halaman Profil. */
+.wifi-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.profile-form-card button.wifi-refresh {
+  width: auto; margin: 0; padding: 8px 14px; background: white; color: #4F7CFF;
+  border: 1px solid #C9D6FF; font-size: 13px;
+}
+.profile-form-card button.wifi-refresh:hover { background: #F0F4FF; }
+
+.wifi-device { padding: 18px; border: 1px solid #E8EDF5; border-radius: 16px; background: #FAFBFD; }
+.wifi-device + .wifi-device { margin-top: 16px; }
+.wifi-device-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.wifi-device-head strong { font-size: 16px; color: #24304A; }
+.wifi-status { padding: 4px 10px; border-radius: 999px; background: #EEF1F5; color: #697386; font-size: 12px; font-weight: 700; }
+.wifi-status.online { background: #E7F6EE; color: #23774F; }
+.wifi-reported { margin: 6px 0 0; color: #8A93A3; font-size: 12px; }
+.wifi-empty { color: #697386; font-size: 13px; }
+
+.wifi-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.wifi-list li {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: white; border: 1px solid #E8EDF5; border-radius: 12px;
+}
+.wifi-list li.removing { opacity: 0.6; }
+.wifi-list li.removing .wifi-name { text-decoration: line-through; }
+.wifi-name { flex: 1; min-width: 0; font-weight: 600; color: #24304A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wifi-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.wifi-badges em { font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+.badge-online { background: #E7F6EE; color: #23774F; }
+.badge-wait { background: #FFF4DE; color: #B76E00; }
+.badge-remove { background: #FEECEC; color: #B42318; }
+.profile-form-card button.wifi-remove {
+  width: auto; margin: 0; padding: 7px 12px; background: white; color: #B42318;
+  border: 1px solid #F5B5B5; font-size: 12px;
+}
+.profile-form-card button.wifi-remove:hover { background: #FEECEC; }
+
+.wifi-add { margin-top: 6px; }
+.wifi-password { display: flex; gap: 8px; margin-top: 8px; }
+.profile-form-card .wifi-password button.wifi-toggle {
+  width: auto; margin: 0; padding: 0 14px; background: white; color: #4F7CFF;
+  border: 1px solid #DCE2EB; font-size: 12px; white-space: nowrap;
+}
+.wifi-note { margin: 10px 0 0; color: #B76E00; font-size: 12px; }
+.profile-form-card .wifi-add button[type="submit"] { margin-top: 14px; }
+.wifi-message { margin: 12px 0 0; color: #319A68; font-size: 13px; font-weight: 600; }
+.wifi-message.error { color: #B42318; }
+
+@media (max-width: 600px) {
+  .wifi-list li { flex-wrap: wrap; }
+  .wifi-name { flex-basis: 100%; }
+}

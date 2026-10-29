@@ -1111,6 +1111,9 @@ require("./access-routes").attachAccessRoutes({ app, db, FRONTEND_URL });
 // Admin: reset / hapus LINGO, nonaktifkan profil. Orang tua: hapus profil.
 require("./lifecycle-routes").attachLifecycleRoutes({ app, db, requireAdmin, FRONTEND_URL });
 
+// Orang tua: atur daftar WiFi LINGO. LINGO: lapor & ambil perubahan WiFi.
+require("./wifi-routes").attachWifiRoutes({ app, db });
+
 app.listen(
     PORT,
     "0.0.0.0",

@@ -1603,6 +1603,34 @@ void saveWiFiCredential(const String &ssidBaru, const String &passBaru) {
   Serial.printf("[WIFI] Tersimpan %d WiFi. Terbaru: %s\n", m, ssidBaru.c_str());
 }
 
+// Hapus satu WiFi dari daftar (diminta orang tua lewat dashboard).
+bool removeSavedWiFi(const String &ssidHapus) {
+  String ssid[MAX_SAVED_WIFI], pass[MAX_SAVED_WIFI];
+  const int n = loadSavedWiFiList(ssid, pass);
+  int m = 0;
+  for (int i = 0; i < n; i++) {
+    if (ssid[i] == ssidHapus) continue;
+    ssid[m] = ssid[i];
+    pass[m] = pass[i];
+    m++;
+  }
+  if (m == n) return false;
+
+  wifiPreferences.begin("lingo-wifi", false);
+  for (int i = 0; i < n; i++) {
+    wifiPreferences.remove(("s" + String(i)).c_str());
+    wifiPreferences.remove(("p" + String(i)).c_str());
+  }
+  wifiPreferences.putInt("n", m);
+  for (int i = 0; i < m; i++) {
+    wifiPreferences.putString(("s" + String(i)).c_str(), ssid[i]);
+    wifiPreferences.putString(("p" + String(i)).c_str(), pass[i]);
+  }
+  wifiPreferences.end();
+  Serial.printf("[WIFI] %s dihapus dari daftar. Sisa %d WiFi.\n", ssidHapus.c_str(), m);
+  return true;
+}
+
 // Scan WiFi sekitar, lalu mulai koneksi ke WiFi tersimpan dengan sinyal
 // terkuat. false jika daftar kosong atau tidak ada yang terlihat.
 bool beginBestSavedWiFi() {
@@ -1808,6 +1836,106 @@ void mulaiOTA() {
                 WiFi.localIP().toString().c_str());
 }
 
+// =========================================================
+// SINKRON DAFTAR WIFI DENGAN DASHBOARD ORANG TUA
+// LINGO melaporkan SSID tersimpan (tanpa password) dan WiFi yang dipakai,
+// lalu menerapkan tambahan/hapusan dari orang tua dan mengonfirmasinya.
+// =========================================================
+const char *wifiSyncURLBase = "https://lingo-7ri9.onrender.com/api/devices/";
+const unsigned long WIFI_SYNC_INTERVAL_MS = 120000;
+const unsigned long WIFI_SYNC_JEDA_DIAM_MS = 15000; // jangan ganggu anak yang sedang main
+unsigned long lastWifiSyncMs = 0;
+bool wifiSyncSegera = false;
+
+// Kunci acak perangkat, dibuat sekali dan dicatat server saat sync pertama.
+String deviceKey() {
+  Preferences prefs;
+  prefs.begin("lingo-dev", false);
+  String key = prefs.getString("key", "");
+  if (key.length() != 64) {
+    key = "";
+    for (int i = 0; i < 8; i++) {
+      char part[9];
+      snprintf(part, sizeof(part), "%08lx", (unsigned long)esp_random());
+      key += part;
+    }
+    prefs.putString("key", key);
+  }
+  prefs.end();
+  return key;
+}
+
+// POST laporan WiFi. true bila server membalas 200; balasan di `response`.
+bool postWiFiSync(uint32_t ackVersion, DynamicJsonDocument &response) {
+#if !LINGO_WIFI_ENABLED
+  (void)ackVersion; (void)response;
+  return false;
+#else
+  if (WiFi.status() != WL_CONNECTED || !LINGO_INSECURE_HTTPS_TEST_ONLY) return false;
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  const String url = String(wifiSyncURLBase) + LINGO_DEVICE_ID + "/wifi/sync";
+  if (!http.begin(client, url)) return false;
+  http.setTimeout(5000);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Device-Key", deviceKey());
+
+  String ssid[MAX_SAVED_WIFI], pass[MAX_SAVED_WIFI];
+  const int n = loadSavedWiFiList(ssid, pass);
+  StaticJsonDocument<512> doc;
+  JsonArray saved = doc.createNestedArray("saved");
+  for (int i = 0; i < n; i++) saved.add(ssid[i]);
+  doc["connected_ssid"] = WiFi.SSID();
+  doc["rssi"] = WiFi.RSSI();
+  if (ackVersion) doc["ack_version"] = ackVersion;
+  String body;
+  serializeJson(doc, body);
+
+  const int code = http.POST(body);
+  const String reply = http.getString();
+  http.end();
+  if (code != 200) {
+    Serial.printf("[WIFI-SYNC] HTTP %d %s\n", code, reply.c_str());
+    return false;
+  }
+  return !deserializeJson(response, reply);
+#endif
+}
+
+void syncWiFiList() {
+  DynamicJsonDocument response(2048);
+  if (!postWiFiSync(0, response)) return;
+  const uint32_t version = response["version"] | 0;
+  if (!version) return;
+
+  const String ssidDipakai = WiFi.SSID();
+  bool hapusYangDipakai = false;
+  for (JsonVariant v : response["remove"].as<JsonArray>()) {
+    const String ssid = v.as<String>();
+    if (removeSavedWiFi(ssid) && ssid == ssidDipakai) hapusYangDipakai = true;
+  }
+  for (JsonVariant v : response["add"].as<JsonArray>()) {
+    const String ssid = v["ssid"].as<String>();
+    const String pass = v["password"] | "";
+    saveWiFiCredential(ssid, pass);
+  }
+  Serial.printf("[WIFI-SYNC] Perubahan v%lu diterapkan.\n", (unsigned long)version);
+
+  DynamicJsonDocument ack(2048);
+  postWiFiSync(version, ack);
+
+  if (hapusYangDipakai) {
+    // WiFi yang sedang dipakai dihapus: lupakan, lalu pindah ke WiFi tersimpan lain.
+    Serial.println("[WIFI-SYNC] WiFi yang dipakai dihapus. Pindah ke WiFi lain...");
+    WiFi.disconnect(false, true);
+    delay(200);
+    beginBestSavedWiFi();
+    wifiState = WIFI_RECONNECT_LATAR;
+    wifiReconnectStartedAt = millis();
+  }
+}
+
 // Dipanggil baik setelah WiFi lama kembali tersambung maupun setelah
 // pengguna berhasil menyimpan WiFi baru melalui portal.
 void onWiFiConnected(bool diamDiam) {
@@ -1825,6 +1953,7 @@ void onWiFiConnected(bool diamDiam) {
   // Sinkron jam (WIB) untuk stempel waktu sesi; berjalan di latar belakang.
   configTzTime("WIB-7", "pool.ntp.org", "time.google.com");
   mulaiOTA();
+  wifiSyncSegera = true;
   // Queue sesi penilaian akan di-upload ulang oleh loop() saat online.
 }
 
@@ -2434,6 +2563,16 @@ void loop() {
       millis() - lastUploadAttemptMs > 15000) {
     lastUploadAttemptMs = millis();
     sendSession();
+  }
+
+  // Sinkron daftar WiFi dengan dashboard saat anak tidak sedang menekan tombol.
+  if (lingoReady && wifiState == WIFI_ONLINE && WiFi.status() == WL_CONNECTED &&
+      audioHalamanSelesaiPada == 0 &&
+      millis() - lastActivityMs > WIFI_SYNC_JEDA_DIAM_MS &&
+      (wifiSyncSegera || millis() - lastWifiSyncMs > WIFI_SYNC_INTERVAL_MS)) {
+    lastWifiSyncMs = millis();
+    wifiSyncSegera = false;
+    syncWiFiList();
   }
 
   // ========================================================

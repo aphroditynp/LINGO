@@ -6,6 +6,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import API from "../api";
+import WifiCard from "../components/WifiCard";
 import {
     clearCurrentUserId,
     getCurrentUserId,
@@ -533,6 +534,12 @@ function Profile() {
             {!isUsingDemoProfile() && (
 
             <>
+
+            {/* WIFI CARD */}
+
+            <WifiCard userId={getCurrentUserId()} />
+
+
 
             {/* SHARE CARD */}
 
