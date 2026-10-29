@@ -581,13 +581,32 @@ void completePageScore() {
   pageProgress = PageProgress{};
 }
 
-// Track 210 diputar non-blocking oleh loop() setelah audio "benar" terakhir.
+// Track 210 diputar non-blocking oleh loop() setelah audio "benar" terakhir
+// SELESAI, ditandai pesan "play finished" dari DFPlayer. Batas waktu
+// (perkiraan durasi + cadangan) dipakai bila pesan itu tidak datang.
 // 0 = tidak ada jadwal; dibatalkan bila anak menekan tombol lain lebih dulu.
+const unsigned long CADANGAN_AUDIO_HALAMAN_SELESAI_MS = 3000;
+const unsigned long ABAIKAN_SELESAI_AWAL_MS = 300;
 unsigned long audioHalamanSelesaiPada = 0;
+unsigned long audioHalamanSelesaiDijadwalkan = 0;
 
-void jadwalkanAudioHalamanSelesai(unsigned long jedaMs) {
-  audioHalamanSelesaiPada = millis() + jedaMs;
+void jadwalkanAudioHalamanSelesai(unsigned long perkiraanDurasiMs) {
+  // Buang pesan DFPlayer lama agar "selesai" milik audio sebelumnya
+  // tidak langsung memicu track 210.
+  while (myDFPlayer.available()) myDFPlayer.readType();
+  audioHalamanSelesaiDijadwalkan = millis();
+  audioHalamanSelesaiPada =
+    audioHalamanSelesaiDijadwalkan + perkiraanDurasiMs + CADANGAN_AUDIO_HALAMAN_SELESAI_MS;
   if (audioHalamanSelesaiPada == 0) audioHalamanSelesaiPada = 1;
+}
+
+bool audioSebelumHalamanSelesaiBerakhir() {
+  if (myDFPlayer.available() &&
+      myDFPlayer.readType() == DFPlayerPlayFinished &&
+      millis() - audioHalamanSelesaiDijadwalkan >= ABAIKAN_SELESAI_AWAL_MS) {
+    return true;
+  }
+  return (long)(millis() - audioHalamanSelesaiPada) >= 0;
 }
 
 // true bila halaman baru saja selesai dengan semua tugas benar.
@@ -2246,8 +2265,7 @@ void loop() {
 
   if (WiFi.status() == WL_CONNECTED) ArduinoOTA.handle();
 
-  if (audioHalamanSelesaiPada != 0 &&
-      (long)(millis() - audioHalamanSelesaiPada) >= 0) {
+  if (audioHalamanSelesaiPada != 0 && audioSebelumHalamanSelesaiBerakhir()) {
     audioHalamanSelesaiPada = 0;
     Serial.println("[SKOR] Halaman selesai. Track 210.");
     myDFPlayer.playMp3Folder(AUDIO_HALAMAN_SELESAI);
