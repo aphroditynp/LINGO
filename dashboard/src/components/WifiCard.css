@@ -49,3 +49,15 @@
   .wifi-list li { flex-wrap: wrap; }
   .wifi-name { flex-basis: 100%; }
 }
+
+.wifi-device-head strong { display: inline-flex; align-items: center; gap: 8px; }
+.wifi-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 13px; color: #3E485A; }
+.wifi-mode em { font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+.badge-main { background: #E8EEFF; color: #3D5BD9; }
+.profile-form-card button.wifi-auto,
+.profile-form-card button.wifi-use {
+  width: auto; margin: 0; padding: 7px 12px; background: white; color: #4F7CFF;
+  border: 1px solid #C9D6FF; font-size: 12px;
+}
+.profile-form-card button.wifi-auto:hover,
+.profile-form-card button.wifi-use:hover { background: #F0F4FF; }

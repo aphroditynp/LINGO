@@ -5,6 +5,8 @@ const crypto = require("crypto");
 const DEVICE_ID_PATTERN = /^[A-Za-z0-9_-]{3,64}$/;
 const USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const MAX_SAVED_WIFI = 5;
+// LINGO yang hidup melapor tiap ±1 menit (saat anak tidak menekan tombol).
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 // Daftar WiFi LINGO:
 // - LINGO menyimpan maks. 5 WiFi (SSID + password) di memorinya sendiri dan
@@ -47,7 +49,18 @@ function attachWifiRoutes({ app, db }) {
     return {
       pending_add: (pending?.add || []).map((item) => item.ssid),
       pending_remove: pending?.remove || [],
+      // null = tidak ada perubahan; "" = kembali otomatis (sinyal terkuat).
+      pending_prefer: typeof pending?.prefer === "string" ? pending.prefer : null,
     };
+  }
+
+  const isEmptyPending = (p) => p.add.length === 0 && p.remove.length === 0 && typeof p.prefer !== "string";
+
+  function devicePayload(pending) {
+    return pending
+      ? { version: pending.version, add: pending.add || [], remove: pending.remove || [],
+        prefer: typeof pending.prefer === "string" ? pending.prefer : null }
+      : { version: 0, add: [], remove: [], prefer: null };
   }
 
   // LINGO -> server: laporkan WiFi, ambil perubahan dari orang tua.
@@ -60,7 +73,7 @@ function attachWifiRoutes({ app, db }) {
       }
       const ref = devices.doc(deviceId);
       const doc = await ref.get();
-      if (!doc.exists) return res.json({ version: 0, add: [], remove: [] });
+      if (!doc.exists) return res.json(devicePayload(null));
 
       const body = req.body || {};
       const saved = Array.isArray(body.saved)
@@ -74,14 +87,15 @@ function attachWifiRoutes({ app, db }) {
           saved,
           connected_ssid: validSsid(cleanSsid(body.connected_ssid)) ? body.connected_ssid : null,
           rssi: Number.isFinite(body.rssi) ? body.rssi : null,
+          preferred_ssid: validSsid(cleanSsid(body.preferred)) ? body.preferred : null,
+          switch_failed: validSsid(cleanSsid(body.switch_failed)) ? body.switch_failed : null,
+          state: body.state === "sleeping" ? "sleeping" : "awake",
           reported_at: now(),
         },
         wifi_pending: pending,
       });
 
-      res.json(pending
-        ? { version: pending.version, add: pending.add || [], remove: pending.remove || [] }
-        : { version: 0, add: [], remove: [] });
+      res.json(devicePayload(pending));
     } catch (error) {
       console.error("WIFI SYNC ERROR:", error);
       res.status(500).json({ error: "Gagal sinkron WiFi." });
@@ -108,6 +122,7 @@ function attachWifiRoutes({ app, db }) {
       const paired = (await devices.where("user_id", "==", req.params.userId).get()).docs;
       res.json(paired.map((doc) => {
         const data = doc.data();
+        const contacts = [data.wifi?.reported_at, data.last_seen_at].filter(Boolean).sort();
         return {
           device_id: data.device_id || doc.id,
           saved: data.wifi?.saved || [],
@@ -115,6 +130,11 @@ function attachWifiRoutes({ app, db }) {
           rssi: data.wifi?.rssi ?? null,
           reported_at: data.wifi?.reported_at || null,
           last_seen_at: data.last_seen_at || null,
+          last_contact_at: contacts.length ? contacts[contacts.length - 1] : null,
+          state: data.wifi?.state || null,
+          preferred_ssid: data.wifi?.preferred_ssid || null,
+          switch_failed: data.wifi?.switch_failed || null,
+          online_window_ms: ONLINE_WINDOW_MS,
           max_saved: MAX_SAVED_WIFI,
           ...publicPending(data.wifi_pending),
         };
@@ -136,11 +156,12 @@ function attachWifiRoutes({ app, db }) {
         version: (current.version || 0) + 1,
         add: [...(current.add || [])],
         remove: [...(current.remove || [])],
+        prefer: typeof current.prefer === "string" ? current.prefer : null,
         updated_at: now(),
       };
       const error = mutate(pending, doc.data());
       if (error) return res.status(400).json({ error });
-      const empty = pending.add.length === 0 && pending.remove.length === 0;
+      const empty = isEmptyPending(pending);
       await devices.doc(deviceId).update({ wifi_pending: empty ? null : pending });
       res.json({ status: "success", ...publicPending(empty ? null : pending) });
     } catch (error) {
@@ -169,6 +190,19 @@ function attachWifiRoutes({ app, db }) {
     if (!wasPendingAdd || (data.wifi?.saved || []).includes(ssid)) {
       if (!pending.remove.includes(ssid)) pending.remove.push(ssid);
     }
+    if (pending.prefer === ssid) pending.prefer = data.wifi?.preferred_ssid === ssid ? "" : null;
+    return null;
+  }));
+
+  // Pilih WiFi yang diutamakan LINGO. ssid "" = otomatis (sinyal terkuat).
+  app.post("/api/users/:userId/devices/:deviceId/wifi/prefer", (req, res) => changePending(req, res, (pending, data) => {
+    const ssid = cleanSsid(req.body?.ssid).trim();
+    if (ssid) {
+      const known = (data.wifi?.saved || []).includes(ssid) || pending.add.some((item) => item.ssid === ssid);
+      if (!known || pending.remove.includes(ssid)) return "Pilih WiFi yang ada di daftar LINGO.";
+    }
+    // Sama dengan yang sudah dipakai LINGO: tidak perlu dikirim lagi.
+    pending.prefer = ssid === (data.wifi?.preferred_ssid || "") ? null : ssid;
     return null;
   }));
 }

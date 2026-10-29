@@ -37,7 +37,7 @@ async function run() {
   try {
     // Sync pertama mencatat kunci; kunci lain ditolak.
     let a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Rumah", "HP Ibu"], connected_ssid: "Rumah", rssi: -55 }, key);
-    assert.equal(a.status, 200); assert.deepEqual(a.data, { version: 0, add: [], remove: [] });
+    assert.equal(a.status, 200); assert.deepEqual(a.data, { version: 0, add: [], remove: [], prefer: null });
     a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: [] }, "x".repeat(64));
     assert.equal(a.status, 401);
     a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: [] });
@@ -74,7 +74,7 @@ async function run() {
     assert.deepEqual(a.data.remove, ["HP Ibu"]);
     const version = a.data.version;
     a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Sekolah", "Rumah"], connected_ssid: "Rumah", ack_version: version }, key);
-    assert.deepEqual(a.data, { version: 0, add: [], remove: [] });
+    assert.deepEqual(a.data, { version: 0, add: [], remove: [], prefer: null });
     assert.equal(collections.devices.get("LINGO001").wifi_pending, null);
     a = await hit("GET", "/users/childA/wifi");
     assert.deepEqual(a.data[0].saved, ["Sekolah", "Rumah"]);
@@ -84,6 +84,30 @@ async function run() {
     await hit("POST", "/users/childA/devices/LINGO001/wifi", { ssid: "Kafe", password: "" });
     a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: [], ack_version: version }, key);
     assert.deepEqual(a.data.add, [{ ssid: "Kafe", password: "" }]);
+
+    // Pilih WiFi yang diutamakan.
+    await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Sekolah", "Rumah"], connected_ssid: "Rumah" }, key);
+    a = await hit("POST", "/users/childA/devices/LINGO001/wifi/prefer", { ssid: "Tidak Ada" });
+    assert.equal(a.status, 400);
+    a = await hit("POST", "/users/childA/devices/LINGO001/wifi/prefer", { ssid: "Sekolah" });
+    assert.equal(a.data.pending_prefer, "Sekolah");
+    a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Sekolah", "Rumah"], connected_ssid: "Rumah" }, key);
+    assert.equal(a.data.prefer, "Sekolah");
+    a = await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Kafe", "Sekolah", "Rumah"], connected_ssid: "Sekolah",
+      preferred: "Sekolah", ack_version: a.data.version }, key);
+    assert.deepEqual(a.data, { version: 0, add: [], remove: [], prefer: null });
+    a = await hit("GET", "/users/childA/wifi");
+    assert.equal(a.data[0].preferred_ssid, "Sekolah"); assert.equal(a.data[0].pending_prefer, null);
+    assert.equal(a.data[0].state, "awake"); assert.ok(a.data[0].last_contact_at);
+    // Memilih yang sudah diutamakan tidak membuat perubahan; "" = otomatis.
+    a = await hit("POST", "/users/childA/devices/LINGO001/wifi/prefer", { ssid: "Sekolah" });
+    assert.equal(a.data.pending_prefer, null);
+    a = await hit("POST", "/users/childA/devices/LINGO001/wifi/prefer", { ssid: "" });
+    assert.equal(a.data.pending_prefer, "");
+    // Laporan mode istirahat + gagal pindah.
+    await hit("POST", "/devices/LINGO001/wifi/sync", { saved: ["Sekolah"], state: "sleeping", switch_failed: "Kafe" }, key);
+    a = await hit("GET", "/users/childA/wifi");
+    assert.equal(a.data[0].state, "sleeping"); assert.equal(a.data[0].switch_failed, "Kafe");
 
     // Profil nonaktif tidak bisa melihat / mengubah.
     collections.users.get("childA").active = false;

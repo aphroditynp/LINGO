@@ -1,0 +1,24 @@
+/* Status hidup/istirahat/tidak aktif LINGO. */
+.lingo-presence {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 800; white-space: nowrap; background: #EEF1F5; color: #697386;
+}
+.lingo-presence i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.lingo-presence.on { background: #E7F6EE; color: #23774F; }
+.lingo-presence.on i { animation: lingo-pulse 1.6s ease-in-out infinite; }
+.lingo-presence.sleep { background: #FFF4DE; color: #B76E00; }
+.lingo-presence.off { background: #FEECEC; color: #B42318; }
+@keyframes lingo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(35, 119, 79, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(35, 119, 79, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .lingo-presence.on i { animation: none; } }
+
+.lingo-status-list { display: grid; gap: 8px; margin-top: 14px; }
+.lingo-status {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px;
+  background: white; border: 1px solid #E8EDF5; max-width: 520px;
+}
+.lingo-status div { display: grid; gap: 2px; min-width: 0; }
+.lingo-status strong { font-size: 14px; color: #24304A; }
+.lingo-status span:not(.lingo-presence) { font-size: 12px; color: #697386; }

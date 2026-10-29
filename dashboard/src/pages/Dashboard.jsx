@@ -17,6 +17,7 @@ import ModuleChart
 from "../components/ModuleChart";
 import PageScoreBoard from "../components/PageScoreBoard";
 import DailyComparison from "../components/DailyComparison";
+import LingoStatus from "../components/LingoStatus";
 
 
 import API
@@ -598,6 +599,9 @@ function Dashboard({
                         )
 
                     }
+
+
+                    <LingoStatus userId={activeUserId} />
 
 
                 </div>

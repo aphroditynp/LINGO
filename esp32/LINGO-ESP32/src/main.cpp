@@ -305,7 +305,7 @@ const int AUDIO_MIC_BERMASALAH = 207;      // mikrofon / Edge Impulse gagal diny
 const int AUDIO_MIC_TERLALU_SINGKAT = 209; // MIC dilepas saat cue 171 / rekaman < 150 ms
 const int AUDIO_HALAMAN_SELESAI = 210;     // semua tugas halaman benar
 const unsigned long DURASI_AUDIO_BENAR_MS = 2700;    // 0030.mp3 = 2,51 s
-const unsigned long DURASI_AUDIO_GABUNGAN_MS = 1200; // 0049-0055.mp3 <= 0,94 s
+const unsigned long DURASI_AUDIO_GABUNGAN_MS = 1400; // 0049-0055.mp3 <= 1,15 s
 const int AUDIO_MODE_ISTIRAHAT = 208;      // masuk mode hemat daya
 
 // =========================================================
@@ -1603,6 +1603,23 @@ void saveWiFiCredential(const String &ssidBaru, const String &passBaru) {
   Serial.printf("[WIFI] Tersimpan %d WiFi. Terbaru: %s\n", m, ssidBaru.c_str());
 }
 
+// WiFi yang diutamakan orang tua ("" = otomatis, pilih sinyal terkuat).
+String loadPreferredWiFi() {
+  String pref = "";
+  if (wifiPreferences.begin("lingo-wifi", true)) {
+    pref = wifiPreferences.getString("pref", "");
+    wifiPreferences.end();
+  }
+  return pref;
+}
+
+void savePreferredWiFi(const String &ssid) {
+  wifiPreferences.begin("lingo-wifi", false);
+  wifiPreferences.putString("pref", ssid);
+  wifiPreferences.end();
+  Serial.printf("[WIFI] WiFi utama: %s\n", ssid.length() ? ssid.c_str() : "(otomatis)");
+}
+
 // Hapus satu WiFi dari daftar (diminta orang tua lewat dashboard).
 bool removeSavedWiFi(const String &ssidHapus) {
   String ssid[MAX_SAVED_WIFI], pass[MAX_SAVED_WIFI];
@@ -1627,6 +1644,7 @@ bool removeSavedWiFi(const String &ssidHapus) {
     wifiPreferences.putString(("p" + String(i)).c_str(), pass[i]);
   }
   wifiPreferences.end();
+  if (loadPreferredWiFi() == ssidHapus) savePreferredWiFi("");
   Serial.printf("[WIFI] %s dihapus dari daftar. Sisa %d WiFi.\n", ssidHapus.c_str(), m);
   return true;
 }
@@ -1638,14 +1656,20 @@ bool beginBestSavedWiFi() {
   const int n = loadSavedWiFiList(ssid, pass);
   if (n == 0) return false;
 
+  const String pref = loadPreferredWiFi();
   const int found = WiFi.scanNetworks();
   int best = -1;
   int bestRssi = -1000;
+  bool bestIsPref = false;
   for (int k = 0; k < found; k++) {
     for (int i = 0; i < n; i++) {
-      if (WiFi.SSID(k) == ssid[i] && WiFi.RSSI(k) > bestRssi) {
+      if (WiFi.SSID(k) != ssid[i]) continue;
+      // WiFi pilihan orang tua didahulukan selama terlihat.
+      const bool isPref = pref.length() && ssid[i] == pref;
+      if ((isPref && !bestIsPref) || (isPref == bestIsPref && WiFi.RSSI(k) > bestRssi)) {
         best = i;
         bestRssi = WiFi.RSSI(k);
+        bestIsPref = isPref;
       }
     }
   }
@@ -1842,10 +1866,14 @@ void mulaiOTA() {
 // lalu menerapkan tambahan/hapusan dari orang tua dan mengonfirmasinya.
 // =========================================================
 const char *wifiSyncURLBase = "https://lingo-7ri9.onrender.com/api/devices/";
-const unsigned long WIFI_SYNC_INTERVAL_MS = 120000;
-const unsigned long WIFI_SYNC_JEDA_DIAM_MS = 15000; // jangan ganggu anak yang sedang main
+// Sync juga menjadi tanda "LINGO hidup" di dashboard.
+const unsigned long WIFI_SYNC_INTERVAL_MS = 60000;
+const unsigned long WIFI_SYNC_JEDA_DIAM_MS = 10000; // jangan ganggu anak yang sedang main
+const unsigned long WIFI_PINDAH_TIMEOUT_MS = 15000;
 unsigned long lastWifiSyncMs = 0;
 bool wifiSyncSegera = false;
+bool lingoMauTidur = false;     // dilaporkan sebagai "sleeping" sebelum mode hemat
+String wifiGagalPindah = "";    // WiFi pilihan yang gagal disambung, dilaporkan sekali
 
 // Kunci acak perangkat, dibuat sekali dan dicatat server saat sync pertama.
 String deviceKey() {
@@ -1888,6 +1916,9 @@ bool postWiFiSync(uint32_t ackVersion, DynamicJsonDocument &response) {
   for (int i = 0; i < n; i++) saved.add(ssid[i]);
   doc["connected_ssid"] = WiFi.SSID();
   doc["rssi"] = WiFi.RSSI();
+  doc["preferred"] = loadPreferredWiFi();
+  doc["state"] = lingoMauTidur ? "sleeping" : "awake";
+  if (wifiGagalPindah.length()) doc["switch_failed"] = wifiGagalPindah;
   if (ackVersion) doc["ack_version"] = ackVersion;
   String body;
   serializeJson(doc, body);
@@ -1899,6 +1930,7 @@ bool postWiFiSync(uint32_t ackVersion, DynamicJsonDocument &response) {
     Serial.printf("[WIFI-SYNC] HTTP %d %s\n", code, reply.c_str());
     return false;
   }
+  wifiGagalPindah = "";
   return !deserializeJson(response, reply);
 #endif
 }
@@ -1920,10 +1952,50 @@ void syncWiFiList() {
     const String pass = v["password"] | "";
     saveWiFiCredential(ssid, pass);
   }
+  String pindahKe = "";
+  if (!response["prefer"].isNull()) {
+    const String pref = response["prefer"].as<String>();
+    savePreferredWiFi(pref);
+    if (pref.length() && pref != ssidDipakai && !hapusYangDipakai) pindahKe = pref;
+  }
   Serial.printf("[WIFI-SYNC] Perubahan v%lu diterapkan.\n", (unsigned long)version);
 
   DynamicJsonDocument ack(2048);
   postWiFiSync(version, ack);
+
+  if (pindahKe.length()) {
+    // Orang tua memilih WiFi lain: coba sambung, kembali ke WiFi lama bila gagal.
+    String ssid[MAX_SAVED_WIFI], pass[MAX_SAVED_WIFI];
+    const int n = loadSavedWiFiList(ssid, pass);
+    String passBaru, passLama;
+    bool ada = false;
+    for (int i = 0; i < n; i++) {
+      if (ssid[i] == pindahKe) { passBaru = pass[i]; ada = true; }
+      if (ssid[i] == ssidDipakai) passLama = pass[i];
+    }
+    if (ada) {
+      Serial.printf("[WIFI-SYNC] Pindah ke %s...\n", pindahKe.c_str());
+      WiFi.disconnect(false, false);
+      delay(200);
+      WiFi.begin(pindahKe.c_str(), passBaru.c_str());
+      const unsigned long mulai = millis();
+      while (WiFi.status() != WL_CONNECTED && millis() - mulai < WIFI_PINDAH_TIMEOUT_MS) delay(250);
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("[WIFI-SYNC] Tersambung ke %s.\n", pindahKe.c_str());
+        saveWiFiCredential(pindahKe, passBaru);
+      } else {
+        Serial.printf("[WIFI-SYNC] Gagal ke %s. Kembali ke %s.\n", pindahKe.c_str(), ssidDipakai.c_str());
+        wifiGagalPindah = pindahKe;
+        savePreferredWiFi("");
+        WiFi.disconnect(false, false);
+        delay(200);
+        WiFi.begin(ssidDipakai.c_str(), passLama.c_str());
+        wifiState = WIFI_RECONNECT_LATAR;
+        wifiReconnectStartedAt = millis();
+      }
+      wifiSyncSegera = true;
+    }
+  }
 
   if (hapusYangDipakai) {
     // WiFi yang sedang dipakai dihapus: lupakan, lalu pindah ke WiFi tersimpan lain.
@@ -2165,7 +2237,14 @@ void handleWiFiState() {
 void masukModeHemat() {
   Serial.println("[HEMAT] 10 menit tanpa aktivitas. Masuk mode istirahat.");
   completePageScore();
-  if (WiFi.status() == WL_CONNECTED) sendSession();
+  if (WiFi.status() == WL_CONNECTED) {
+    sendSession();
+    // Kabari dashboard bahwa LINGO sedang istirahat.
+    lingoMauTidur = true;
+    DynamicJsonDocument ignored(2048);
+    postWiFiSync(0, ignored);
+    lingoMauTidur = false;
+  }
 
   myDFPlayer.playMp3Folder(AUDIO_MODE_ISTIRAHAT);
   delay(DURASI_AUDIO_MODE_ISTIRAHAT_MS);

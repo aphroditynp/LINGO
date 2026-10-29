@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import API from "../api";
+import { PresenceBadge } from "./LingoStatus";
+import { relativeTime } from "./lingoPresence";
 import "./WifiCard.css";
-
-function relativeTime(iso) {
-    if (!iso) return null;
-    const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (minutes < 1) return "baru saja";
-    if (minutes < 60) return `${minutes} menit lalu`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours} jam lalu`;
-    return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
 function signalLabel(rssi) {
     if (rssi == null) return null;
@@ -43,6 +35,8 @@ function DeviceWifi({ userId, device, onChanged }) {
     const [message, setMessage] = useState({ text: "", error: false });
 
     const rows = wifiRows(device);
+    const pendingPrefer = device.pending_prefer;
+    const preferred = pendingPrefer !== null ? pendingPrefer : (device.preferred_ssid || "");
     const base = `/users/${encodeURIComponent(userId)}/devices/${encodeURIComponent(device.device_id)}/wifi`;
 
     const handleAdd = async (event) => {
@@ -87,6 +81,29 @@ function DeviceWifi({ userId, device, onChanged }) {
         }
     };
 
+    const handlePrefer = async (target) => {
+        if (target && !window.confirm(
+            `Jadikan "${target}" WiFi utama ${device.device_id}?\n\n` +
+            `LINGO akan pindah ke WiFi ini saat online berikutnya, dan selalu memilihnya jika terjangkau. ` +
+            `Jika gagal tersambung, LINGO kembali ke WiFi sebelumnya.`
+        )) return;
+        try {
+            setBusy(true);
+            await API.post(`${base}/prefer`, { ssid: target });
+            setMessage({
+                text: target
+                    ? `LINGO akan memakai ${target} saat online berikutnya.`
+                    : "LINGO akan kembali memilih WiFi dengan sinyal terkuat.",
+                error: false,
+            });
+            onChanged();
+        } catch (error) {
+            setMessage({ text: error.response?.data?.error || "Gagal memilih WiFi.", error: true });
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const reported = relativeTime(device.reported_at);
     const full = device.saved.length + device.pending_add.filter((s) => !device.saved.includes(s)).length
         - device.pending_remove.length >= device.max_saved;
@@ -94,7 +111,7 @@ function DeviceWifi({ userId, device, onChanged }) {
     return (
         <div className="wifi-device">
             <div className="wifi-device-head">
-                <strong>{device.device_id}</strong>
+                <strong>{device.device_id} <PresenceBadge device={device} /></strong>
                 <span className={device.connected_ssid ? "wifi-status online" : "wifi-status"}>
                     {!reported
                         ? "Belum melapor (perlu firmware terbaru)"
@@ -104,6 +121,21 @@ function DeviceWifi({ userId, device, onChanged }) {
                 </span>
             </div>
             {reported && <p className="wifi-reported">Dilaporkan LINGO {reported}</p>}
+            {device.switch_failed && (
+                <p className="wifi-message error">
+                    LINGO gagal tersambung ke {device.switch_failed} (password salah atau di luar jangkauan),
+                    jadi tetap memakai WiFi sebelumnya.
+                </p>
+            )}
+            <p className="wifi-mode">
+                Pilihan WiFi: <strong>{preferred ? `utamakan ${preferred}` : "otomatis (sinyal terkuat)"}</strong>
+                {pendingPrefer !== null && <em className="badge-wait">Menunggu LINGO</em>}
+                {preferred && (
+                    <button type="button" className="wifi-auto" disabled={busy} onClick={() => handlePrefer("")}>
+                        Kembali otomatis
+                    </button>
+                )}
+            </p>
 
             {rows.length === 0 ? (
                 <p className="wifi-empty">Belum ada WiFi tersimpan di LINGO ini.</p>
@@ -113,11 +145,17 @@ function DeviceWifi({ userId, device, onChanged }) {
                         <li key={row.ssid} className={row.removing ? "removing" : ""}>
                             <span className="wifi-name">📶 {row.ssid}</span>
                             <span className="wifi-badges">
+                                {row.ssid === preferred && !row.removing && <em className="badge-main">Utama</em>}
                                 {row.connected && !row.removing && <em className="badge-online">Sedang dipakai</em>}
                                 {row.adding && <em className="badge-wait">Menunggu LINGO</em>}
                                 {row.updating && <em className="badge-wait">Password diperbarui</em>}
                                 {row.removing && <em className="badge-remove">Akan dihapus</em>}
                             </span>
+                            {!row.removing && row.ssid !== preferred && (
+                                <button type="button" className="wifi-use" disabled={busy} onClick={() => handlePrefer(row.ssid)}>
+                                    Pakai
+                                </button>
+                            )}
                             {!row.removing && (
                                 <button type="button" className="wifi-remove" disabled={busy} onClick={() => handleRemove(row)}>
                                     {row.adding ? "Batal" : "Hapus"}
@@ -188,8 +226,9 @@ export default function WifiCard({ userId }) {
                 <button type="button" className="wifi-refresh" onClick={reload}>Muat ulang</button>
             </div>
             <p className="form-description">
-                Daftar WiFi yang bisa dipakai LINGO. LINGO otomatis memilih WiFi tersimpan dengan sinyal terkuat.
-                Perubahan dikirim saat LINGO menyala dan terhubung internet (sekitar 2 menit, saat anak tidak
+                Daftar WiFi yang bisa dipakai LINGO. Tekan <strong>Pakai</strong> untuk memilih WiFi utama; tanpa
+                pilihan, LINGO otomatis memilih WiFi tersimpan dengan sinyal terkuat.
+                Perubahan dikirim saat LINGO menyala dan terhubung internet (sekitar 1 menit, saat anak tidak
                 sedang menekan tombol). Password tidak pernah ditampilkan lagi di sini.
             </p>
 
