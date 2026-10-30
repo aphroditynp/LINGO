@@ -83,6 +83,19 @@ unsigned long lastActivityMs = 0;
 
 const unsigned long DURASI_AUDIO_LINGO_HIDUP_MS = 6000; // 0200.mp3 = 5,76 s
 
+// Sapaan track 200 diputar tanpa menghentikan proses lain (mikrofon, WiFi).
+// Audio berikutnya menunggu tungguSapaanSelesai() agar sapaan tidak terpotong.
+unsigned long sapaanSelesaiPada = 0;
+
+void putarSapaanLingo() {
+  myDFPlayer.playMp3Folder(TRACK_LINGO_HIDUP);
+  sapaanSelesaiPada = millis() + DURASI_AUDIO_LINGO_HIDUP_MS;
+}
+
+void tungguSapaanSelesai() {
+  while ((long)(sapaanSelesaiPada - millis()) > 0) delay(10);
+}
+
 const unsigned long WIFI_CONNECT_TIMEOUT = 15000;
 const unsigned long WIFI_AUDIO_INTERVAL = 15000; // 0399.mp3 = 12,81 s, 0400.mp3 = 7,34 s
 const unsigned long WIFI_PORTAL_RETRY_INTERVAL = 10000;
@@ -2035,7 +2048,10 @@ void onWiFiConnected(bool diamDiam) {
   Serial.printf("[WIFI] ONLINE | SSID=%s | IP=%s\n",
                 WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
   // Reconnect latar tidak boleh memotong audio permainan anak.
-  if (!diamDiam) myDFPlayer.playMp3Folder(TRACK_WIFI_TERHUBUNG);
+  if (!diamDiam) {
+    tungguSapaanSelesai();
+    myDFPlayer.playMp3Folder(TRACK_WIFI_TERHUBUNG);
+  }
 
   // Sinkron jam (WIB) untuk stempel waktu sesi; berjalan di latar belakang.
   configTzTime("WIB-7", "pool.ntp.org", "time.google.com");
@@ -2080,6 +2096,7 @@ void enterOfflineMode() {
   Serial.println("Permainan berjalan tanpa koneksi WiFi.");
   Serial.println("Sesi penilaian tertunda tetap tersimpan di NVS.");
   Serial.println("======================================");
+  tungguSapaanSelesai();
   myDFPlayer.playMp3Folder(TRACK_MODE_OFFLINE);
 }
 
@@ -2093,6 +2110,7 @@ void playTrack399() {
     Serial.println(
       "PLAY TRACK 399"
     );
+    tungguSapaanSelesai();
 
     myDFPlayer.playMp3Folder(
       TRACK_WIFI_SETUP
@@ -2114,6 +2132,7 @@ void playTrack400() {
     Serial.println(
       "PLAY TRACK 400"
     );
+    tungguSapaanSelesai();
 
     myDFPlayer.playMp3Folder(
       TRACK_WIFI_FAILED
@@ -2280,8 +2299,7 @@ void masukModeHemat() {
   // Tunggu tombol dilepas agar tidak langsung dianggap tombol MIC.
   while (digitalRead(MIC_BUTTON_PIN) == HIGH) delay(10);
 
-  myDFPlayer.playMp3Folder(TRACK_LINGO_HIDUP);
-  delay(DURASI_AUDIO_LINGO_HIDUP_MS);
+  putarSapaanLingo();
 
   if (tetapOffline) enterOfflineMode();
   else startWiFiSystem();
@@ -2434,14 +2452,9 @@ void setup() {
     "DFPlayer siap."
   );
 
-  // Sapaan saat LINGO dinyalakan, ditunggu agar tidak terpotong audio WiFi.
-  myDFPlayer.playMp3Folder(
-    TRACK_LINGO_HIDUP
-  );
-
-  delay(
-    DURASI_AUDIO_LINGO_HIDUP_MS
-  );
+  // Sapaan saat LINGO dinyalakan. Mikrofon & WiFi disiapkan sambil sapaan
+  // berjalan; audio WiFi berikutnya menunggu sapaan selesai.
+  putarSapaanLingo();
 
 
   // ========================================================
@@ -2457,6 +2470,7 @@ void setup() {
     );
 
     // Ulangi pesan suara agar guru/orang tua tahu ada yang perlu diperiksa.
+    tungguSapaanSelesai();
     while (true) {
       myDFPlayer.playMp3Folder(AUDIO_MIC_BERMASALAH);
       delay(15000);
