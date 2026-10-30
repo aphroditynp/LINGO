@@ -318,7 +318,7 @@ const int AUDIO_MIC_BERMASALAH = 207;      // mikrofon / Edge Impulse gagal diny
 const int AUDIO_MIC_TERLALU_SINGKAT = 209; // MIC dilepas saat cue 171 / rekaman < 150 ms
 const int AUDIO_HALAMAN_SELESAI = 210;     // semua tugas halaman benar
 const unsigned long DURASI_AUDIO_BENAR_MS = 2700;    // 0030.mp3 = 2,51 s
-const unsigned long DURASI_AUDIO_GABUNGAN_MS = 1400; // 0049-0055.mp3 <= 1,15 s
+const unsigned long DURASI_AUDIO_GABUNGAN_MS = 1400; // 0049-0055.mp3 <= 1,31 s
 const int AUDIO_MODE_ISTIRAHAT = 208;      // masuk mode hemat daya
 
 // =========================================================
@@ -332,7 +332,7 @@ const int AUDIO_SALAH = 31;
 const int HALAMAN_MISI_JUARA_1 = 6;
 const int HALAMAN_MISI_JUARA_2 = 9;
 const int HALAMAN_MENCOCOKKAN_SUKU_KATA = 10;
-const unsigned long DURASI_AUDIO_KANAN_MENCOCOKKAN_MS = 1000;
+const unsigned long DURASI_AUDIO_KANAN_MENCOCOKKAN_MS = 1100; // 0042-0048.mp3 <= 1,01 s
 
 struct KuisInteraktif {
   int pinTombolSoal;      // Pin objek kiri (suku kata pertama)
@@ -372,11 +372,11 @@ KuisInteraktif soalMisiJuara2[JUMLAH_SOAL_MISI_JUARA_2] = {
 const int JUMLAH_SOAL_MENCOCOKKAN = 7;
 KuisInteraktif soalMencocokkan[JUMLAH_SOAL_MENCOCOKKAN] = {
   // Track: kiri 35-41, kanan 42-48, kata utuh 49-55 (lihat spreadsheet)
-  // Kolom kiri pin 10,17,21,25,29,33,37 (atas->bawah): ka sa ma ru ce ro bu
-  // Kolom kanan pin 9,18,22,26,30,34,38 (atas->bawah): te ku sa ti ki ri du
+  // Kolom kiri pin 10,17,21,25,29,33,37 (atas->bawah): ka sa su ru ce ro bu
+  // Kolom kanan pin 9,18,22,26,30,34,38 (atas->bawah): te ku sa ti ki ri su
   {10, 35, 30, 42, 49}, // ka + ki = kaki
   {17, 36, 9,  43, 50}, // sa + te = sate
-  {21, 37, 38, 44, 51}, // ma + du = madu
+  {21, 37, 38, 44, 51}, // su + su = susu
   {25, 38, 22, 45, 52}, // ru + sa = rusa
   {29, 39, 34, 46, 53}, // ce + ri = ceri
   {33, 40, 26, 47, 54}, // ro + ti = roti
