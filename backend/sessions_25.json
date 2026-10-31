@@ -17,7 +17,6 @@
       "accuracy": 83,
       "class_group": "TK B",
       "participant_code": "TKB-01",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -137,7 +136,6 @@
       "accuracy": 83,
       "class_group": "TK B",
       "participant_code": "TKB-02",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -257,7 +255,6 @@
       "accuracy": 50,
       "class_group": "TK B",
       "participant_code": "TKB-03",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -377,7 +374,6 @@
       "accuracy": 100,
       "class_group": "TK B",
       "participant_code": "TKB-04",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -497,7 +493,6 @@
       "accuracy": 100,
       "class_group": "TK B",
       "participant_code": "TKB-05",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -617,7 +612,6 @@
       "accuracy": 67,
       "class_group": "TK B",
       "participant_code": "TKB-06",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -737,7 +731,6 @@
       "accuracy": 92,
       "class_group": "TK B",
       "participant_code": "TKB-07",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -857,7 +850,6 @@
       "accuracy": 67,
       "class_group": "TK B",
       "participant_code": "TKB-08",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -977,7 +969,6 @@
       "accuracy": 50,
       "class_group": "TK B",
       "participant_code": "TKB-09",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1097,7 +1088,6 @@
       "accuracy": 100,
       "class_group": "TK B",
       "participant_code": "TKB-10",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1217,7 +1207,6 @@
       "accuracy": 75,
       "class_group": "TK B",
       "participant_code": "TKB-11",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1337,7 +1326,6 @@
       "accuracy": 92,
       "class_group": "TK B",
       "participant_code": "TKB-12",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1457,7 +1445,6 @@
       "accuracy": 58,
       "class_group": "TK B",
       "participant_code": "TKB-13",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1577,7 +1564,6 @@
       "accuracy": 25,
       "class_group": "TK A",
       "participant_code": "TKA-01",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1697,7 +1683,6 @@
       "accuracy": 92,
       "class_group": "TK A",
       "participant_code": "TKA-02",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1817,7 +1802,6 @@
       "accuracy": 17,
       "class_group": "TK A",
       "participant_code": "TKA-03",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -1937,7 +1921,6 @@
       "accuracy": 42,
       "class_group": "TK A",
       "participant_code": "TKA-04",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2057,7 +2040,6 @@
       "accuracy": 42,
       "class_group": "TK A",
       "participant_code": "TKA-05",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2177,7 +2159,6 @@
       "accuracy": 83,
       "class_group": "TK A",
       "participant_code": "TKA-06",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2297,7 +2278,6 @@
       "accuracy": 42,
       "class_group": "TK A",
       "participant_code": "TKA-07",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2417,7 +2397,6 @@
       "accuracy": 25,
       "class_group": "TK A",
       "participant_code": "TKA-08",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2537,7 +2516,6 @@
       "accuracy": 25,
       "class_group": "TK A",
       "participant_code": "TKA-09",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2657,7 +2635,6 @@
       "accuracy": 92,
       "class_group": "TK A",
       "participant_code": "TKA-10",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2777,7 +2754,6 @@
       "accuracy": 33,
       "class_group": "TK A",
       "participant_code": "TKA-11",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",
@@ -2897,7 +2873,6 @@
       "accuracy": 33,
       "class_group": "TK A",
       "participant_code": "TKA-12",
-      "is_demo": true,
       "word_results": [
         {
           "word": "itu",

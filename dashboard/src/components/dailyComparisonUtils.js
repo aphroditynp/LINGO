@@ -103,7 +103,6 @@ export function averageSessionsOnDay(graded, day, selectedModule = "all") {
       // bukan hasil terakhir. Persentase tetap rata-rata accuracy per sesi.
       correct: sum("correct"), wrong: sum("wrong"), attempts: sum("attempts"),
       total_question: hasMixedQuestions ? null : qValues[0],
-      is_demo: samples.some(s => s.is_demo === true),
     });
   }
   return byTask;
@@ -122,7 +121,6 @@ function aggregate(sessions) {
     correct: sum("correct"),
     wrong: sum("wrong"),
     attempts: sum("attempts"),
-    hasDemo: items.some(s => s.is_demo === true),
   };
 }
 

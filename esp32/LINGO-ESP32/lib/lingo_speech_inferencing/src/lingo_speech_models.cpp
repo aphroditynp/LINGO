@@ -1,5 +1,10 @@
 #include "lingo_speech_inferencing.h"
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
+#include "model-parameters/model_variables_1149727.h"
+#include "model-parameters/model_variables_1149728.h"
+#include "model-parameters/model_variables_1149729.h"
+#include "model-parameters/model_variables_1149730.h"
+#include "model-parameters/model_variables_1149732.h"
 #include <Arduino.h>
 #include "esp_heap_caps.h"
 #include <stdlib.h>
@@ -90,18 +95,25 @@ bool lingoRecognize(
     ei_impulse_result_t result = {0};
     EI_IMPULSE_ERROR error;
 
-    // Satu model gabungan (project 1141951): aku, bima, itu, lula, noise, unknown.
-    // Enum hanya menandai kata target; label dicocokkan oleh pemanggil.
+    // Model gabungan (1141951) untuk itu/aku/bima/lula, lalu satu model per blok.
+    // Label dicocokkan oleh pemanggil.
+    ei_impulse_handle_t *handle = nullptr;
     switch (model) {
         case LINGO_MODEL_ITU:
         case LINGO_MODEL_AKU:
         case LINGO_MODEL_BIMA:
         case LINGO_MODEL_LULA:
-            error = process_impulse(&impulse_handle_1141951_1, &signal, &result, false);
+            handle = &impulse_handle_1141951_1;
             break;
+        case LINGO_MODEL_T1_BLOK2: handle = &impulse_handle_1149727_1; break;
+        case LINGO_MODEL_T1_BLOK3: handle = &impulse_handle_1149728_1; break;
+        case LINGO_MODEL_T2_BLOK1: handle = &impulse_handle_1149729_1; break;
+        case LINGO_MODEL_T2_BLOK2: handle = &impulse_handle_1149730_1; break;
+        case LINGO_MODEL_T2_BLOK3: handle = &impulse_handle_1149732_1; break;
         default:
             return false;
     }
+    error = process_impulse(handle, &signal, &result, false);
 
     lingoHeapCheckpoint("lingoRecognize returned from process_impulse");
 
@@ -114,7 +126,9 @@ bool lingoRecognize(
     }
 
     size_t bestIndex = 0;
-    for (size_t i = 1; i < EI_CLASSIFIER_LABEL_COUNT; i++) {
+    // EI_CLASSIFIER_LABEL_COUNT = jumlah label terbanyak; tiap model bisa lebih sedikit.
+    const size_t labelCount = handle->impulse->label_count;
+    for (size_t i = 1; i < labelCount; i++) {
         if (result.classification[i].value > result.classification[bestIndex].value) {
             bestIndex = i;
         }

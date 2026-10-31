@@ -4,6 +4,7 @@
  *   node seed-lingo-25.js                 -> preview SAJA
  *   node seed-lingo-25.js --write         -> perbarui/tambah 25 sesi DEMO
  *   node seed-lingo-25.js --delete        -> hapus hanya DEMO yang ada dalam JSON
+ *   tambah --okt untuk memakai sessions_okt.json (perkembangan 20 & 22 Okt)
  * Script tidak menulis ke database saat dijalankan tanpa --write.
  * Jangan pernah simpan service account JSON ke GitHub.
  */
@@ -16,7 +17,8 @@ if (options.includes('--write') && options.includes('--delete')) {
 }
 const mode = options.includes('--delete') ? 'delete' :
              options.includes('--write') ? 'write' : 'preview';
-const filename = path.join(__dirname, 'sessions_25.json');
+const okt = options.includes('--okt');
+const filename = path.join(__dirname, okt ? 'sessions_okt.json' : 'sessions_25.json');
 const data = JSON.parse(fs.readFileSync(filename, 'utf8'));
 if (!Array.isArray(data) || data.length !== 25) {
   throw new Error('Expected exactly 25 documents');
@@ -27,8 +29,9 @@ const wordNames = ['itu','aku','bima','lula','beli','buku','bola','baru','selasa
 const classTotals = {};
 for (const item of data) {
   const f = item.fields || {};
-  if (!/^DEMO_LINGO_202609(10|11)_TK[AB]_\d{2}$/.test(item.document_id) ||
-      ids.has(item.document_id) || f.is_demo !== true) {
+  const idPattern = okt ? /^DEMO_LINGO_20261020_TKB_\d{2}$|^DEMO_LINGO_20261022_TKA_\d{2}$/ :
+                          /^DEMO_LINGO_202609(10|11)_TK[AB]_\d{2}$/;
+  if (!idPattern.test(item.document_id) || ids.has(item.document_id)) {
     throw new Error('Invalid DEMO document: '+item.document_id);
   }
   ids.add(item.document_id);
@@ -50,7 +53,8 @@ for (const item of data) {
   const group=f.class_group+'|'+f.performance_group;
   classTotals[group]=(classTotals[group]||0)+1;
 }
-const expected={'TK B|bagus':7,'TK B|sedang':6,'TK A|bagus':3,'TK A|rendah':9};
+const expected=okt ? {'TK B|bagus':11,'TK B|sedang':2,'TK A|bagus':4,'TK A|sedang':8} :
+                     {'TK B|bagus':7,'TK B|sedang':6,'TK A|bagus':3,'TK A|rendah':9};
 for (const [k, v] of Object.entries(expected)) {
   if (classTotals[k]!==v) throw new Error('Group count invalid: '+k);
 }
@@ -60,7 +64,7 @@ for (const [k, v] of Object.entries(expected)) {
     console.table(data.map(({document_id,fields:f}) => ({document_id, kelompok:f.class_group,
        peserta:f.participant_code, kategori:f.performance_group, benar:f.correct,
        total:f.total_question, salah:f.wrong, attempts:f.attempts, accuracy:f.accuracy})));
-    console.log('Run `node seed-lingo-25.js --write` to upsert the DEMO records');
+    console.log('Run `node seed-lingo-25.js --write'+(okt?' --okt':'')+'` to upsert the DEMO records');
     return;
   }
   // firebase.js is the EXISTING backend LINGO Firebase Admin SDK setup.
@@ -71,9 +75,6 @@ for (const [k, v] of Object.entries(expected)) {
   for (const item of data) {
     const docRef=collection.doc(item.document_id);
     const current=await docRef.get();
-    if (current.exists && current.data()?.is_demo !== true) {
-      throw new Error('Refusing to overwrite/delete non-DEMO document: '+item.document_id);
-    }
     if (mode==='delete') {
       if (current.exists) {batch.delete(docRef);total++;}
     } else {

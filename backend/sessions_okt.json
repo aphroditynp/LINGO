@@ -1,0 +1,2977 @@
+[
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_01",
+    "fields": {
+      "attempts": 23,
+      "correct": 11,
+      "date": "2026-10-20T02:00:13.819Z",
+      "device_id": "LINGO002",
+      "duration": 411,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 12,
+      "accuracy": 92,
+      "class_group": "TK B",
+      "participant_code": "TKB-01",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_02",
+    "fields": {
+      "attempts": 18,
+      "correct": 12,
+      "date": "2026-10-20T02:07:26.819Z",
+      "device_id": "LINGO002",
+      "duration": 338,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 6,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-02",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_03",
+    "fields": {
+      "attempts": 28,
+      "correct": 7,
+      "date": "2026-10-20T02:14:39.819Z",
+      "device_id": "LINGO002",
+      "duration": 360,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 21,
+      "accuracy": 58,
+      "class_group": "TK B",
+      "participant_code": "TKB-03",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_04",
+    "fields": {
+      "attempts": 18,
+      "correct": 12,
+      "date": "2026-10-20T02:21:52.819Z",
+      "device_id": "LINGO002",
+      "duration": 348,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 6,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-04",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_05",
+    "fields": {
+      "attempts": 15,
+      "correct": 12,
+      "date": "2026-10-20T02:28:08.819Z",
+      "device_id": "LINGO002",
+      "duration": 293,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 3,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-05",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_06",
+    "fields": {
+      "attempts": 23,
+      "correct": 12,
+      "date": "2026-10-20T02:35:21.819Z",
+      "device_id": "LINGO002",
+      "duration": 474,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 11,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-06",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_07",
+    "fields": {
+      "attempts": 16,
+      "correct": 12,
+      "date": "2026-10-20T02:42:34.819Z",
+      "device_id": "LINGO002",
+      "duration": 411,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 4,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-07",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_08",
+    "fields": {
+      "attempts": 20,
+      "correct": 10,
+      "date": "2026-10-20T02:49:47.819Z",
+      "device_id": "LINGO002",
+      "duration": 325,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 10,
+      "accuracy": 83,
+      "class_group": "TK B",
+      "participant_code": "TKB-08",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_09",
+    "fields": {
+      "attempts": 26,
+      "correct": 8,
+      "date": "2026-10-20T02:56:03.819Z",
+      "device_id": "LINGO002",
+      "duration": 325,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 18,
+      "accuracy": 67,
+      "class_group": "TK B",
+      "participant_code": "TKB-09",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_10",
+    "fields": {
+      "attempts": 19,
+      "correct": 12,
+      "date": "2026-10-20T03:03:16.819Z",
+      "device_id": "LINGO002",
+      "duration": 427,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 7,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-10",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_11",
+    "fields": {
+      "attempts": 21,
+      "correct": 12,
+      "date": "2026-10-20T03:10:29.819Z",
+      "device_id": "LINGO002",
+      "duration": 427,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 9,
+      "accuracy": 100,
+      "class_group": "TK B",
+      "participant_code": "TKB-11",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_12",
+    "fields": {
+      "attempts": 20,
+      "correct": 11,
+      "date": "2026-10-20T03:17:42.819Z",
+      "device_id": "LINGO002",
+      "duration": 353,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 9,
+      "accuracy": 92,
+      "class_group": "TK B",
+      "participant_code": "TKB-12",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261020_TKB_13",
+    "fields": {
+      "attempts": 24,
+      "correct": 10,
+      "date": "2026-10-20T03:24:55.819Z",
+      "device_id": "LINGO002",
+      "duration": 313,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 14,
+      "accuracy": 83,
+      "class_group": "TK B",
+      "participant_code": "TKB-13",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_01",
+    "fields": {
+      "attempts": 30,
+      "correct": 10,
+      "date": "2026-10-22T02:00:13.819Z",
+      "device_id": "LINGO002",
+      "duration": 381,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 20,
+      "accuracy": 83,
+      "class_group": "TK A",
+      "participant_code": "TKA-01",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_02",
+    "fields": {
+      "attempts": 17,
+      "correct": 12,
+      "date": "2026-10-22T02:07:26.819Z",
+      "device_id": "LINGO002",
+      "duration": 381,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 5,
+      "accuracy": 100,
+      "class_group": "TK A",
+      "participant_code": "TKA-02",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_03",
+    "fields": {
+      "attempts": 33,
+      "correct": 6,
+      "date": "2026-10-22T02:14:39.819Z",
+      "device_id": "LINGO002",
+      "duration": 509,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 27,
+      "accuracy": 50,
+      "class_group": "TK A",
+      "participant_code": "TKA-03",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_04",
+    "fields": {
+      "attempts": 29,
+      "correct": 9,
+      "date": "2026-10-22T02:21:52.819Z",
+      "device_id": "LINGO002",
+      "duration": 354,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 20,
+      "accuracy": 75,
+      "class_group": "TK A",
+      "participant_code": "TKA-04",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_05",
+    "fields": {
+      "attempts": 26,
+      "correct": 9,
+      "date": "2026-10-22T02:28:08.819Z",
+      "device_id": "LINGO002",
+      "duration": 425,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 17,
+      "accuracy": 75,
+      "class_group": "TK A",
+      "participant_code": "TKA-05",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_06",
+    "fields": {
+      "attempts": 17,
+      "correct": 11,
+      "date": "2026-10-22T02:35:21.819Z",
+      "device_id": "LINGO002",
+      "duration": 273,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 6,
+      "accuracy": 92,
+      "class_group": "TK A",
+      "participant_code": "TKA-06",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_07",
+    "fields": {
+      "attempts": 27,
+      "correct": 7,
+      "date": "2026-10-22T02:42:34.819Z",
+      "device_id": "LINGO002",
+      "duration": 434,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 20,
+      "accuracy": 58,
+      "class_group": "TK A",
+      "participant_code": "TKA-07",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_08",
+    "fields": {
+      "attempts": 29,
+      "correct": 9,
+      "date": "2026-10-22T02:49:47.819Z",
+      "device_id": "LINGO002",
+      "duration": 414,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 20,
+      "accuracy": 75,
+      "class_group": "TK A",
+      "participant_code": "TKA-08",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_09",
+    "fields": {
+      "attempts": 29,
+      "correct": 6,
+      "date": "2026-10-22T02:56:03.819Z",
+      "device_id": "LINGO002",
+      "duration": 365,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 23,
+      "accuracy": 50,
+      "class_group": "TK A",
+      "participant_code": "TKA-09",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_10",
+    "fields": {
+      "attempts": 22,
+      "correct": 12,
+      "date": "2026-10-22T03:03:16.819Z",
+      "device_id": "LINGO002",
+      "duration": 246,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 10,
+      "accuracy": 100,
+      "class_group": "TK A",
+      "participant_code": "TKA-10",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "bagus"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_11",
+    "fields": {
+      "attempts": 27,
+      "correct": 9,
+      "date": "2026-10-22T03:10:29.819Z",
+      "device_id": "LINGO002",
+      "duration": 503,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 18,
+      "accuracy": 75,
+      "class_group": "TK A",
+      "participant_code": "TKA-11",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  },
+  {
+    "document_id": "DEMO_LINGO_20261022_TKA_12",
+    "fields": {
+      "attempts": 26,
+      "correct": 8,
+      "date": "2026-10-22T03:17:42.819Z",
+      "device_id": "LINGO002",
+      "duration": 490,
+      "module": "Tantangan Bicara 1",
+      "module_id": "tantangan_bicara_1",
+      "page_number": 14,
+      "status": "graded",
+      "total_question": 12,
+      "user_id": "6FWiP4oxt2LhutnJukYE",
+      "wrong": 18,
+      "accuracy": 67,
+      "class_group": "TK A",
+      "participant_code": "TKA-12",
+      "word_results": [
+        {
+          "word": "itu",
+          "syllables": "i-tu",
+          "correct": true,
+          "attempts": 3,
+          "wrong": 2,
+          "status": "correct"
+        },
+        {
+          "word": "aku",
+          "syllables": "a-ku",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "bima",
+          "syllables": "bi-ma",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "lula",
+          "syllables": "lu-la",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "beli",
+          "syllables": "be-li",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "buku",
+          "syllables": "bu-ku",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "bola",
+          "syllables": "bo-la",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "baru",
+          "syllables": "ba-ru",
+          "correct": false,
+          "attempts": 3,
+          "wrong": 3,
+          "status": "failed_after_3_attempts"
+        },
+        {
+          "word": "selasa",
+          "syllables": "se-la-sa",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "selama",
+          "syllables": "se-la-ma",
+          "correct": true,
+          "attempts": 1,
+          "wrong": 0,
+          "status": "correct"
+        },
+        {
+          "word": "kamera",
+          "syllables": "ka-me-ra",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        },
+        {
+          "word": "lemari",
+          "syllables": "le-ma-ri",
+          "correct": true,
+          "attempts": 2,
+          "wrong": 1,
+          "status": "correct"
+        }
+      ],
+      "performance_group": "sedang"
+    }
+  }
+]

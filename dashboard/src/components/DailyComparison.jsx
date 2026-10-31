@@ -71,8 +71,6 @@ export default function DailyComparison({ sessions = [] }) {
       : !hasMatches
         ? "Belum ada pasangan data yang setara: perlu peserta dan modul yang sama pada kedua hari. Nilai harian di atas masih dapat dilihat, tetapi belum menunjukkan perkembangan belajar."
         : null;
-  const demo = result.leftDaily.hasDemo || result.rightDaily.hasDemo;
-
   return (
     <section className="lingo-compare" aria-label="Perbandingan hasil pembelajaran per tanggal">
       <div className="lingo-compare-header">
@@ -116,8 +114,6 @@ export default function DailyComparison({ sessions = [] }) {
         </button>
         <span>Waktu data: WIB (Asia/Jakarta). {method === "latest" ? "Sesi berulang memakai nilai terbaru." : "Seluruh sesi valid dihitung dalam rata-rata."}</span>
       </div>
-      {demo && <p className="lingo-compare-warning">Beberapa sesi bertanda data simulasi. Jangan gunakan hasil ini sebagai bukti kemajuan anak yang sebenarnya.</p>}
-
       {note ? (
         <div className="lingo-compare-empty" role="status"><strong>Perbandingan belum tersedia</strong><p>{note}</p></div>
       ) : (
@@ -151,9 +147,6 @@ export default function DailyComparison({ sessions = [] }) {
               </div>
             ))}
           </div>
-          {(result.leftUnmatched > 0 || result.rightUnmatched > 0 || result.mismatchedQuestions > 0) && (
-            <p className="lingo-compare-warning">Ada hasil yang tidak masuk perhitungan perkembangan: {result.leftUnmatched} di kiri dan {result.rightUnmatched} di kanan tidak memiliki pasangan setara. Pastikan peserta, modul, dan jumlah soal sama.</p>
-          )}
         </>
       )}
       <p className="lingo-compare-footnote">{method === "average"

@@ -248,35 +248,36 @@ struct KataBicara {
 };
 
 // Kata tanpa model hanya memutar contoh suara dan tidak dinilai.
-// TODO: rekam dataset + latih model Edge Impulse untuk 20 kata lainnya
-//       (rencana 4 kata per model, dikelompokkan per kotak warna di buku),
-//       lalu isi modelLabel/model di bawah. Jumlah tugas halaman ikut otomatis.
+// Satu model Edge Impulse per kotak warna di buku (lihat LingoSpeechModel).
+// ke-re-ta memakai model 2 blok 2 (akurasi uji lebih tinggi daripada 2 blok 1).
+// TODO: rekam dataset + latih model untuk di-ba-ca, ce-ri-ta, ku-ra ku-ra,
+//       a-ku lu-la, bu-ku bi-ma. Jumlah tugas halaman ikut otomatis.
 constexpr KataBicara kataHal14[JUMLAH_KATA_BICARA] = {
   {174, "i-tu",      "itu",   LINGO_MODEL_ITU},
   {175, "a-ku",      "aku",   LINGO_MODEL_AKU},
   {176, "bi-ma",     "bima",  LINGO_MODEL_BIMA},
   {177, "lu-la",     "lula",  LINGO_MODEL_LULA},
-  {178, "be-li",     nullptr, LINGO_MODEL_ITU},
-  {179, "bu-ku",     nullptr, LINGO_MODEL_ITU},
-  {180, "bo-la",     nullptr, LINGO_MODEL_ITU},
-  {181, "ba-ru",     nullptr, LINGO_MODEL_ITU},
-  {182, "se-la-sa",  nullptr, LINGO_MODEL_ITU},
-  {183, "se-la-ma",  nullptr, LINGO_MODEL_ITU},
-  {184, "ka-me-ra",  nullptr, LINGO_MODEL_ITU},
-  {185, "le-ma-ri",  nullptr, LINGO_MODEL_ITU}
+  {178, "be-li",     "Beli",   LINGO_MODEL_T1_BLOK2},
+  {179, "bu-ku",     "Buku",   LINGO_MODEL_T1_BLOK2},
+  {180, "bo-la",     "Bola",   LINGO_MODEL_T1_BLOK2},
+  {181, "ba-ru",     "Baru",   LINGO_MODEL_T1_BLOK2},
+  {182, "se-la-sa",  "Selasa", LINGO_MODEL_T1_BLOK3},
+  {183, "se-la-ma",  "Selama", LINGO_MODEL_T1_BLOK3},
+  {184, "ka-me-ra",  "Kamera", LINGO_MODEL_T1_BLOK3},
+  {185, "le-ma-ri",  "Lemari", LINGO_MODEL_T1_BLOK3}
 };
 
 constexpr KataBicara kataHal16[JUMLAH_KATA_BICARA] = {
-  {186, "ma-du",       nullptr, LINGO_MODEL_ITU},
-  {187, "bu-mi",       nullptr, LINGO_MODEL_ITU},
-  {188, "sa-te",       nullptr, LINGO_MODEL_ITU},
-  {189, "li-ma",       nullptr, LINGO_MODEL_ITU},
-  {190, "ke-re-ta",    nullptr, LINGO_MODEL_ITU},
-  {191, "te-ri-ma",    nullptr, LINGO_MODEL_ITU},
+  {186, "ma-du",       "Ma-du",    LINGO_MODEL_T2_BLOK1},
+  {187, "bu-mi",       "Bu-mi",    LINGO_MODEL_T2_BLOK1},
+  {188, "sa-te",       "Sa-te",    LINGO_MODEL_T2_BLOK1},
+  {189, "li-ma",       "Li-ma",    LINGO_MODEL_T2_BLOK1},
+  {190, "ke-re-ta",    "Kereta",   LINGO_MODEL_T2_BLOK2},
+  {191, "te-ri-ma",    "Terima",   LINGO_MODEL_T2_BLOK2},
   {192, "di-ba-ca",    nullptr, LINGO_MODEL_ITU},
   {193, "ce-ri-ta",    nullptr, LINGO_MODEL_ITU},
   {194, "ku-ra ku-ra", nullptr, LINGO_MODEL_ITU},
-  {195, "ma-ta-ha-ri", nullptr, LINGO_MODEL_ITU},
+  {195, "ma-ta-ha-ri", "Matahari", LINGO_MODEL_T2_BLOK3},
   {196, "a-ku lu-la",  nullptr, LINGO_MODEL_ITU},
   {197, "bu-ku bi-ma", nullptr, LINGO_MODEL_ITU}
 };
@@ -1198,7 +1199,7 @@ bool ujiUcapan(
     return false;
   }
 
-  Serial.printf("Memproses area suara saja (sunyi dilewati), hop %.0f ms, model gabungan...\n",
+  Serial.printf("Memproses area suara saja (sunyi dilewati), hop %.0f ms, model Edge Impulse...\n",
                 1000.0f * MIC_WINDOW_HOP_SAMPLES / LINGO_SPEECH_SAMPLE_RATE);
   Serial.printf("[MEM] Sebelum EI: free PSRAM=%u, free internal=%u bytes\n",
                 (unsigned)ESP.getFreePsram(), (unsigned)ESP.getFreeHeap());
