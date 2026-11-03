@@ -558,7 +558,7 @@ app.post(
             // Kompatibel dengan payload lama, tetapi menerima detail per halaman.
             // user_id SELALU dari pairing device pada Firestore, bukan request ESP.
             const catalog = {
-                tantangan_bicara_1: { module: "Tantangan Bicara 1", page: 14, tasks: 4 },
+                tantangan_bicara_1: { module: "Tantangan Bicara 1", page: 14, tasks: 12 },
                 tantangan_bicara_2: { module: "Tantangan Bicara 2", page: 16, tasks: 12 },
                 misi_juara_1: { module: "Misi Juara 1", page: 18, tasks: 2 },
                 misi_juara_2: { module: "Misi Juara 2", page: 20, tasks: 2 },
@@ -570,10 +570,12 @@ app.post(
                 return res.status(400).json({status:"error", message:"module_id tidak dikenal"});
             }
             const status = data.status === "pending_model" ? "pending_model" : "graded";
-            if (known && known.page === 16 && status !== "pending_model") {
-                return res.status(400).json({status:"error", message:"Model halaman 16 belum tersedia"});
-            }
-            const total = known ? known.tasks : Math.max(0, Number(data.total_question) || 0);
+            // Jumlah tugas Tantangan Bicara ikut jumlah model di firmware saat sesi
+            // dimainkan (sesi lama di antrean NVS bisa < tasks); dibatasi oleh catalog.
+            const sentTotal = Number(data.total_question);
+            const total = known
+                ? (Number.isInteger(sentTotal) && sentTotal > 0 && sentTotal <= known.tasks ? sentTotal : known.tasks)
+                : Math.max(0, Number(data.total_question) || 0);
             const correct = Number(data.correct || 0);
             const wrong = Number(data.wrong || 0);
             const attempts = Number(data.attempts ?? (correct + wrong));

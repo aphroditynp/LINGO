@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 const catalog = [
-  {name:"Tantangan Bicara 1", page:14, total:4},
-  {name:"Tantangan Bicara 2", page:16, total:12, pending:true},
+  {name:"Tantangan Bicara 1", page:14, total:12},
+  {name:"Tantangan Bicara 2", page:16, total:12},
   {name:"Misi Juara 1", page:18, total:2},
   {name:"Misi Juara 2", page:20, total:2},
   {name:"Mencocokkan Suku Kata", page:22, total:7}
@@ -22,7 +22,7 @@ export default function PageScoreBoard({sessions=[]}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(215px,1fr))",gap:12}}>
       {catalog.map(p => {
         const s = latest[p.page];
-        const pending = p.pending || s?.status === "pending_model";
+        const pending = s?.status === "pending_model";
         const assessed = !!s && !pending && s.accuracy != null;
         return <div key={p.page} style={{border:"1px solid #e6ebf3",borderRadius:12,padding:16}}>
           <div style={{fontSize:12,color:"#6b7280"}}>HALAMAN {p.page}</div>
@@ -31,7 +31,7 @@ export default function PageScoreBoard({sessions=[]}) {
             {pending ? "Belum dinilai" : assessed ? `${Math.round(Number(s.accuracy))}%` : "Belum ada sesi"}
           </div>
           <div style={{fontSize:12,color:"#5a6576"}}>
-            {pending ? "Model pengenalan halaman ini belum tersedia" : assessed ? `${s.correct}/${p.total} benar • ${s.wrong} kesalahan • ${s.attempts ?? 0} percobaan` : `${p.total} tugas pada halaman ini`}
+            {pending ? "Model pengenalan halaman ini belum tersedia" : assessed ? `${s.correct}/${s.total_question || p.total} benar • ${s.wrong} kesalahan • ${s.attempts ?? 0} percobaan` : `${p.total} tugas pada halaman ini`}
           </div>
         </div>;
       })}

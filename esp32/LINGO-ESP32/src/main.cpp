@@ -250,8 +250,8 @@ struct KataBicara {
 // Kata tanpa model hanya memutar contoh suara dan tidak dinilai.
 // Satu model Edge Impulse per kotak warna di buku (lihat LingoSpeechModel).
 // ke-re-ta memakai model 2 blok 2 (akurasi uji lebih tinggi daripada 2 blok 1).
-// TODO: rekam dataset + latih model untuk di-ba-ca, ce-ri-ta, ku-ra ku-ra,
-//       a-ku lu-la, bu-ku bi-ma. Jumlah tugas halaman ikut otomatis.
+// Urutan mengikuti buku (baris atas->bawah, kiri lalu kanan).
+// Jumlah tugas halaman ikut otomatis.
 constexpr KataBicara kataHal14[JUMLAH_KATA_BICARA] = {
   {174, "i-tu",      "itu",   LINGO_MODEL_ITU},
   {175, "a-ku",      "aku",   LINGO_MODEL_AKU},
@@ -274,12 +274,12 @@ constexpr KataBicara kataHal16[JUMLAH_KATA_BICARA] = {
   {189, "li-ma",       "Li-ma",    LINGO_MODEL_T2_BLOK1},
   {190, "ke-re-ta",    "Kereta",   LINGO_MODEL_T2_BLOK2},
   {191, "te-ri-ma",    "Terima",   LINGO_MODEL_T2_BLOK2},
-  {192, "di-ba-ca",    nullptr, LINGO_MODEL_ITU},
-  {193, "ce-ri-ta",    nullptr, LINGO_MODEL_ITU},
-  {194, "ku-ra ku-ra", nullptr, LINGO_MODEL_ITU},
+  {192, "ba-ha-sa",    "Bahasa",   LINGO_MODEL_T2_BLOK2},
+  {193, "bo-la-ku",    "Bolaku",   LINGO_MODEL_T2_BLOK2},
+  {194, "be-ka-si",    "Bekasi",   LINGO_MODEL_T2_BLOK3},
   {195, "ma-ta-ha-ri", "Matahari", LINGO_MODEL_T2_BLOK3},
-  {196, "a-ku lu-la",  nullptr, LINGO_MODEL_ITU},
-  {197, "bu-ku bi-ma", nullptr, LINGO_MODEL_ITU}
+  {196, "me-la-ti",    "Melati",   LINGO_MODEL_T2_BLOK3},
+  {197, "ma-ta-mu",    "Matamu",   LINGO_MODEL_T2_BLOK3}
 };
 
 // Rekursif karena toolchain memakai C++11 (constexpr satu return-statement).
@@ -659,26 +659,30 @@ void markPageNotAssessed(int pin) {
                 PAGE_DEFS[pageProgress.pageDef].bookPage, pin);
 }
 
-bool uploadPagePayload(const PageUpload &s) {
+// Hasil upload satu sesi. DITOLAK (HTTP 4xx) tetap disimpan di queue, tetapi
+// tidak menghalangi sesi halaman lain di belakangnya.
+enum UploadHasil { UPLOAD_SELESAI, UPLOAD_COBA_LAGI, UPLOAD_DITOLAK };
+
+UploadHasil uploadPagePayload(const PageUpload &s) {
 #if !LINGO_WIFI_ENABLED
   (void)s;
-  return false;
+  return UPLOAD_COBA_LAGI;
 #else
-  if (WiFi.status() != WL_CONNECTED) return false;
+  if (WiFi.status() != WL_CONNECTED) return UPLOAD_COBA_LAGI;
   WiFiClientSecure client;
   if (LINGO_INSECURE_HTTPS_TEST_ONLY) client.setInsecure();
   else {
     Serial.println("[UPLOAD] Sertifikat CA belum diisi. Mode produksi belum diaktifkan.");
-    return false;
+    return UPLOAD_COBA_LAGI;
   }
   HTTPClient http;
-  if (!http.begin(client, serverURL)) return false;
+  if (!http.begin(client, serverURL)) return UPLOAD_COBA_LAGI;
   http.setTimeout(5000);
   http.addHeader("Content-Type", "application/json");
   const int def = pageDefinitionByBookPage(s.bookPage);
   if (def < 0) {
     Serial.printf("[UPLOAD] Hal %u tidak dikenal; sesi dibuang.\n", (unsigned)s.bookPage);
-    return true;
+    return UPLOAD_SELESAI;
   }
   StaticJsonDocument<768> doc;
   doc["session_id"] = s.sessionId;
@@ -716,9 +720,14 @@ bool uploadPagePayload(const PageUpload &s) {
   if (code == 409) {
     // Ditolak permanen (mis. sesi pemilik lama setelah LINGO di-reset): buang dari queue.
     Serial.println("[UPLOAD] Sesi ditolak permanen server; dihapus dari queue.");
-    return true;
+    return UPLOAD_SELESAI;
   }
-  return code >= 200 && code < 300;
+  if (code >= 200 && code < 300) return UPLOAD_SELESAI;
+  if (code >= 400 && code < 500 && code != 408 && code != 429) {
+    Serial.println("[UPLOAD] Sesi ditolak server; disimpan, lanjut ke sesi berikutnya.");
+    return UPLOAD_DITOLAK;
+  }
+  return UPLOAD_COBA_LAGI;
 #endif
 }
 
@@ -731,9 +740,12 @@ void sendSession() {
     Serial.printf("[UPLOAD] Offline; %u sesi disimpan di NVS untuk retry.\n", (unsigned)queueCount);
     return;
   }
-  while (queueCount) {
-    if (!uploadPagePayload(pageQueue[0])) break;
-    for (int i = 1; i < queueCount; ++i) pageQueue[i - 1] = pageQueue[i];
+  int i = 0;
+  while (i < queueCount) {
+    const UploadHasil hasil = uploadPagePayload(pageQueue[i]);
+    if (hasil == UPLOAD_COBA_LAGI) break; // jaringan/server bermasalah: coba lagi nanti
+    if (hasil == UPLOAD_DITOLAK) { ++i; continue; }
+    for (int j = i + 1; j < queueCount; ++j) pageQueue[j - 1] = pageQueue[j];
     --queueCount;
     savePageQueue();
   }
