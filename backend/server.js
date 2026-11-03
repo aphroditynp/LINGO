@@ -570,12 +570,9 @@ app.post(
                 return res.status(400).json({status:"error", message:"module_id tidak dikenal"});
             }
             const status = data.status === "pending_model" ? "pending_model" : "graded";
-            // Jumlah tugas Tantangan Bicara ikut jumlah model di firmware saat sesi
-            // dimainkan (sesi lama di antrean NVS bisa < tasks); dibatasi oleh catalog.
-            const sentTotal = Number(data.total_question);
-            const total = known
-                ? (Number.isInteger(sentTotal) && sentTotal > 0 && sentTotal <= known.tasks ? sentTotal : known.tasks)
-                : Math.max(0, Number(data.total_question) || 0);
+            // Total soal selalu dari catalog (Tantangan Bicara 1 & 2 = 12 kata),
+            // termasuk sesi lama dari firmware/antrean NVS yang masih mengirim 4.
+            const total = known ? known.tasks : Math.max(0, Number(data.total_question) || 0);
             const correct = Number(data.correct || 0);
             const wrong = Number(data.wrong || 0);
             const attempts = Number(data.attempts ?? (correct + wrong));

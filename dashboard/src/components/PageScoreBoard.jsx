@@ -31,7 +31,7 @@ export default function PageScoreBoard({sessions=[]}) {
             {pending ? "Belum dinilai" : assessed ? `${Math.round(Number(s.accuracy))}%` : "Belum ada sesi"}
           </div>
           <div style={{fontSize:12,color:"#5a6576"}}>
-            {pending ? "Model pengenalan halaman ini belum tersedia" : assessed ? `${s.correct}/${s.total_question || p.total} benar • ${s.wrong} kesalahan • ${s.attempts ?? 0} percobaan` : `${p.total} tugas pada halaman ini`}
+            {pending ? "Model pengenalan halaman ini belum tersedia" : assessed ? `${s.correct}/${p.total} benar • ${s.wrong} kesalahan • ${s.attempts ?? 0} percobaan` : `${p.total} tugas pada halaman ini`}
           </div>
         </div>;
       })}
